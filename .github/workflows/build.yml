@@ -52,6 +52,7 @@ jobs:
           else
             mv "$dir" app
           fi
+          if [ -d app/ember-changed-files ]; then cp app/ember-changed-files/* app/; echo "Applied files from ember-changed-files"; fi
           ls app
       - uses: actions/setup-node@v4
         with:
