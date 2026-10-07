@@ -35,10 +35,10 @@ jobs:
           dir=""
           while IFS= read -r f; do
             d=$(dirname "$f")
-            if [ -f "$d/setup-preload.js" ] && [ -f "$d/main.js" ] && [ -f "$d/welcome.html" ]; then dir="$d"; break; fi
+            if [ -f "$d/setup-preload.js" ] && [ -f "$d/main.js" ] && [ -f "$d/welcome.html" ] && [ -f "$d/safety.js" ] && [ -f "$d/index.html" ]; then dir="$d"; break; fi
           done < <(find . -maxdepth 4 -name package.json -not -path '*/node_modules/*')
           if [ -z "$dir" ]; then
-            echo "No folder contains package.json, main.js, welcome.html and setup-preload.js together. Files found:"
+            echo "No folder contains package.json, main.js, safety.js, index.html, welcome.html and setup-preload.js together. Files found:"
             find . -maxdepth 4 -not -path './.git/*' | head -60
             exit 1
           fi
