@@ -23,6 +23,7 @@ function create() {
   });
   win.once('ready-to-show', () => win.show());
   win.loadFile('index.html');
+  if (process.platform !== 'darwin') win.removeMenu(); // no File/Edit/View bar on Windows and Linux
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:/i.test(url)) win.webContents.send('open-tab', url);
     return { action: 'deny' };
@@ -453,4 +454,3 @@ ipcMain.handle('search:query', async (_, q, pageNo) => {
   });
   return results.length ? {results, page} : {error:'unavailable', page};
 });
-
