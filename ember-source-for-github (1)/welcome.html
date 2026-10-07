@@ -1,0 +1,71 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Welcome to Ember</title>
+<style>
+:root{--bg:#16141f;--surface:#1e1c2a;--surface2:#252336;--border:#2e2b3f;--accent:#ff7c1f;--accent2:#c84bff;--text:#e2e0ee;--muted:#8a87a0;--grad:linear-gradient(135deg,var(--accent),var(--accent2))}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font:14px/1.5 Inter,-apple-system,"SF Pro Display","Segoe UI",system-ui,sans-serif;overflow:hidden;user-select:none}
+body::before{content:'';position:fixed;width:640px;height:640px;left:50%;top:-250px;transform:translateX(-50%);background:radial-gradient(circle,rgba(255,124,31,.22),rgba(200,75,255,.1) 45%,transparent 70%);animation:glow 7s ease-in-out infinite;pointer-events:none}
+@keyframes glow{50%{opacity:.6;transform:translateX(-50%) scale(1.08)}}
+.wiz{position:relative;height:100%;display:flex;flex-direction:column;padding:26px 44px 24px}
+.top,.foot{display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:17px;letter-spacing:-.5px}.logo b{color:var(--accent)}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+.skip{color:var(--muted);font-weight:600;padding:6px 12px;border-radius:999px;transition:.18s}.skip:hover{color:var(--text);background:var(--surface)}
+.body{flex:1;display:flex;flex-direction:column;justify-content:center;animation:in .45s cubic-bezier(.2,.8,.2,1)}
+@keyframes in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.eyebrow{color:var(--accent);font-weight:700;font-size:12px;letter-spacing:1.4px;text-transform:uppercase;margin-bottom:10px}
+h1{font-size:50px;line-height:1.04;letter-spacing:-2px;margin-bottom:14px}h2{font-size:34px;line-height:1.1;letter-spacing:-1.2px;margin-bottom:12px}
+.grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{color:#aaa6b8;font-size:16px;max-width:540px;margin-bottom:22px}
+.chips{display:flex;gap:10px;flex-wrap:wrap}.chip{padding:8px 16px;border-radius:999px;border:1px solid var(--border);background:var(--surface);font-weight:650;font-size:13px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+.card{padding:16px 18px;border:1px solid var(--border);border-radius:16px;background:var(--surface);transition:transform .18s,border-color .18s}.card:hover{transform:translateY(-2px);border-color:rgba(255,124,31,.45)}
+.card h4{font-size:14px;margin-bottom:4px}.card p{color:var(--muted);font-size:12.5px;line-height:1.5}
+.ic{width:32px;height:32px;border-radius:10px;background:var(--grad);display:grid;place-items:center;margin-bottom:10px;font-size:16px}
+.keys{display:grid;grid-template-columns:1fr 1fr;gap:10px 22px;margin-top:4px}.key{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;border:1px solid var(--border);border-radius:14px;background:var(--surface)}
+kbd{padding:2px 8px;border-radius:7px;background:var(--surface2);border:1px solid #3a354c;font:600 12px ui-monospace,Menlo,monospace;margin-left:4px}
+.dots{display:flex;gap:7px}.dots i{width:7px;height:7px;border-radius:99px;background:#3a354c;transition:all .25s}.dots i.on{width:22px;background:var(--grad)}
+.btns{display:flex;gap:10px}.btn{padding:11px 24px;border-radius:999px;border:1px solid #3a354c;background:var(--surface2);color:#d8d4e6;font-weight:650;transition:filter .18s,transform .15s,background-color .18s}.btn:hover{background:#2e2b42}.btn:active{transform:scale(.97)}
+.btn.p{background:var(--grad);border-color:transparent;color:#fff;box-shadow:0 8px 22px rgba(200,75,255,.22)}.btn.p:hover{filter:brightness(1.1)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="ls" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff7c1f"/><stop offset="1" stop-color="#c84bff"/></linearGradient></defs></svg>
+<div class="wiz"><div class="top"><div class="logo"><svg width="26" height="26" viewBox="0 0 150 150" aria-hidden="true"><defs><clipPath id="wc0"><path transform="translate(57 90) rotate(-9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z"/></clipPath><linearGradient id="wg0" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffb347"/><stop offset="1" stop-color="#ff4f9a"/></linearGradient></defs><path transform="translate(57 90) rotate(-9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z" fill="#e046cf"/><path transform="translate(93 90) rotate(9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z" fill="#ff7c1f"/><g clip-path="url(#wc0)"><path transform="translate(93 90) rotate(9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z" fill="url(#wg0)"/></g></svg>ember<b>.</b></div><button class="skip" id="skip">Skip</button></div>
+<div class="body" id="body"></div>
+<div class="foot"><div class="dots" id="dots"></div><div class="btns"><button class="btn" id="back">Back</button><button class="btn p" id="next">Next</button></div></div></div>
+<script>
+const MOD = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl';
+const K = (...k) => k.map(x => '<kbd>' + x + '</kbd>').join('');
+const card = (i, h, p) => '<div class="card"><div class="ic">' + i + '</div><h4>' + h + '</h4><p>' + p + '</p></div>';
+const key = (l, k) => '<div class="key"><span>' + l + '</span><span>' + k + '</span></div>';
+const S = [
+  { next: 'Get started', html: () => '<div class="eyebrow">Welcome</div><h1>Meet <span class="grad">ember.</span></h1><p class="lead">A calmer, cleaner way to browse, from the people behind Lareon. Here’s a quick look around. It takes under a minute.</p><div class="chips"><span class="chip">Free</span><span class="chip">No account needed</span><span class="chip">Built-in protection</span></div>' },
+  { next: 'Next', html: () => '<div class="eyebrow">Browse protected</div><h2>Safety that <span class="grad">stays out of your way</span></h2><div class="grid">' +
+    card('🔒', 'A lock you can read', 'Green, amber or red beside the address bar tells you how safe the connection is.') +
+    card('🛡', 'Dangerous sites blocked', 'Known malware and phishing pages are stopped before they load. The check runs on your device.') +
+    card('⚠', 'Scam and adult warnings', 'Ember warns you before opening risky or adult pages, and the choice stays yours.') +
+    card('🎥', 'Permission prompts', 'Sites have to ask before using your camera, microphone or location.') + '</div>' },
+  { next: 'Next', html: () => '<div class="eyebrow">Yours to keep</div><h2>Made for <span class="grad">how you browse</span></h2><div class="grid">' +
+    card('🕶', 'Private tabs', 'Browse without leaving a trace. Their site data is erased when you close the tab.') +
+    card('📚', 'Library', 'Your search history and downloads in one place, and you can clear them any time.') +
+    card('🗂', 'Tabs come back', 'Reopen Ember and pick up right where you left off.') +
+    card('✉', 'Lareon Mail built in', 'Open your inbox from the toolbar without leaving the page you’re on.') + '</div>' },
+  { next: 'Start browsing', html: () => '<div class="eyebrow">Almost there</div><h2>A few <span class="grad">shortcuts</span></h2><p class="lead" style="margin-bottom:16px">These keep you quick. You’re ready to go.</p><div class="keys">' +
+    key('New tab', K(MOD, 'T')) + key('Private tab', K(MOD, 'Shift', 'N')) + key('Close tab', K(MOD, 'W')) + key('Address bar', K(MOD, 'L')) + key('Reload', K(MOD, 'R')) + '</div>' }
+];
+let i = 0;
+const $ = s => document.querySelector(s);
+function draw() {
+  const b = $('#body'); b.style.animation = 'none'; void b.offsetWidth; b.style.animation = ''; b.innerHTML = S[i].html();
+  $('#dots').innerHTML = S.map((_, n) => '<i class="' + (n === i ? 'on' : '') + '"></i>').join('');
+  $('#back').style.visibility = i ? 'visible' : 'hidden'; $('#next').textContent = S[i].next; $('#next').focus();
+}
+const done = () => window.close();
+$('#next').onclick = () => i === S.length - 1 ? done() : (i++, draw());
+$('#back').onclick = () => { if (i) { i--; draw(); } };
+$('#skip').onclick = done;
+document.addEventListener('keydown', e => { if (e.key === 'ArrowRight') $('#next').click(); else if (e.key === 'ArrowLeft') $('#back').click(); else if (e.key === 'Escape') done(); });
+draw();
+</script></body></html>

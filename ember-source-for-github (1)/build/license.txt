@@ -1,0 +1,29 @@
+EMBER TERMS OF SERVICE
+Last updated: October 2026
+
+1. About these terms
+Ember is a web browser made by Lareon ("we", "us"). By installing or using Ember you agree to these terms. If you do not agree, do not install Ember.
+
+2. Your license
+We give you a free, personal, non-exclusive license to install and use Ember on your own devices. You may not resell Ember or remove Lareon's notices from it.
+
+3. Safety features
+Ember tries to warn you about unsafe, scam and adult sites. These warnings are a help, not a guarantee. No tool catches everything, so please stay careful online.
+
+4. Your data
+Your browsing history, tabs and downloads list are stored on your device. You can clear them or turn history off in the Library. Searches are sent to the search sources that provide results.
+
+5. Websites you visit
+Websites are run by other people. We are not responsible for their content or for what they do.
+
+6. No warranty
+Ember is an early release (version 0.9) and is provided "as is", without warranties of any kind. We do not promise that it will be error-free or always available.
+
+7. Limit of liability
+To the extent the law allows, Lareon is not liable for any loss or damage that results from using Ember.
+
+8. Changes
+We may update Ember and these terms. If you keep using Ember after an update, you accept the updated terms.
+
+9. Contact
+Questions about these terms: lareon.org
