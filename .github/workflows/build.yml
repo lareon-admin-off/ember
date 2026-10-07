@@ -32,11 +32,11 @@ jobs:
       - name: Find the app folder
         shell: bash
         run: |
-          if [ ! -f package.json ]; then
-            dir=$(dirname "$(find . -maxdepth 2 -name package.json -not -path './node_modules/*' | head -n 1)")
-            mv "$dir" app
-          else
+          dir=$(dirname "$(find . -maxdepth 4 -name setup-preload.js -not -path '*/node_modules/*' | head -n 1)")
+          if [ "$dir" = "." ] || [ -z "$dir" ]; then
             mkdir app && git ls-files -z | grep -zv '^\.github/' | xargs -0 -I{} cp --parents {} app/ 2>/dev/null || true
+          else
+            mv "$dir" app
           fi
           ls app
       - uses: actions/setup-node@v4
