@@ -1,0 +1,55 @@
+name: Build installers
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to attach installers to
+        default: v0.9.0
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            flag: --win
+          - os: macos-latest
+            flag: --mac
+          - os: ubuntu-latest
+            flag: --linux
+    runs-on: ${{ matrix.os }}
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Find the app folder
+        shell: bash
+        run: |
+          if [ ! -f package.json ]; then
+            dir=$(dirname "$(find . -maxdepth 2 -name package.json -not -path './node_modules/*' | head -n 1)")
+            mv "$dir" app
+          else
+            mkdir app && git ls-files -z | grep -zv '^\.github/' | xargs -0 -I{} cp --parents {} app/ 2>/dev/null || true
+          fi
+          ls app
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+        working-directory: app
+      - run: npx electron-builder ${{ matrix.flag }} --publish never
+        working-directory: app
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          files: |
+            app/dist/*.exe
+            app/dist/*.dmg
+            app/dist/*.AppImage
