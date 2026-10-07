@@ -1,0 +1,109 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>Ember setup</title><style>
+*{box-sizing:border-box;margin:0}html,body{height:100%;overflow:hidden}
+body{font:14px/1.55 "Segoe UI",system-ui,-apple-system,sans-serif;background:#16131f;color:#f3eef6;display:grid;grid-template-columns:230px minmax(0,1fr);grid-template-rows:minmax(0,1fr);border:1px solid #3b3450;overflow:hidden;user-select:none}
+.side{background:#1d1927;padding:56px 26px 26px;display:flex;flex-direction:column;border-right:1px solid #2c2639;-webkit-app-region:drag}
+.brand{font:700 30px/1 "Segoe UI",system-ui,sans-serif;letter-spacing:-1px;margin:14px 0 4px}.brand b{color:#ff7c1f}
+.tag{color:#a69fb5;font-size:12.5px}
+.steps{margin-top:auto;display:grid;gap:14px;list-style:none;padding:0}
+.steps li{display:flex;align-items:center;gap:12px;color:#7d7590;font-size:13.5px}
+.steps i{width:22px;height:22px;border-radius:50%;border:1.5px solid #4a4260;display:grid;place-items:center;font:600 11px "Segoe UI",sans-serif;font-style:normal}
+.steps li.on{color:#f3eef6}.steps li.on i{border-color:#ff7c1f;background:#ff7c1f;color:#2a1405}
+.steps li.ok i{border-color:#ff7c1f;color:#ff7c1f}
+.main{min-height:0;height:100%;overflow:hidden;display:flex;flex-direction:column;padding:48px 44px 28px;min-width:0;position:relative}
+.win{position:absolute;top:0;right:0;display:flex;-webkit-app-region:no-drag}
+.win button{width:44px;height:34px;background:none;border:0;color:#a69fb5;font-size:15px;cursor:pointer}.win button:hover{background:#2c2639;color:#fff}
+.drag{position:absolute;top:0;left:0;right:88px;height:34px;-webkit-app-region:drag}
+h1{font:700 32px/1.1 "Segoe UI",system-ui,sans-serif;letter-spacing:-1px;margin-bottom:12px}
+p{color:#a69fb5}
+.pg{display:none;flex:1;flex-direction:column;min-height:0}.pg.on{display:flex}
+.pts{margin-top:22px;display:grid;gap:14px}.pts div{padding-left:16px;border-left:3px solid #ff7c1f}.pts b{display:block;color:#f3eef6;font-weight:600}.pts span{color:#a69fb5;font-size:13px}
+.terms{flex:1;min-height:0;margin:14px 0 12px;padding:14px 16px;background:#1d1927;border:1px solid #332d44;border-radius:10px;overflow:auto;white-space:pre-wrap;color:#cfc8dc;font-size:12.5px;line-height:1.6;user-select:text}
+.hint{font-size:12.5px;color:#ffb347;margin-bottom:10px;min-height:19px}
+.ck{display:flex;align-items:center;gap:10px;color:#f3eef6;font-size:13.5px;opacity:.45;cursor:default}.ck.live{opacity:1;cursor:pointer}
+.ck span{width:18px;height:18px;border-radius:4px;border:1.5px solid #6a6277;display:grid;place-items:center;font-size:12px;color:#2a1405}.ck.on span{background:#ff7c1f;border-color:#ff7c1f}
+.big{margin:auto 0;text-align:left}.big svg{margin-bottom:18px}
+.foot{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+button.b{padding:9px 24px;border-radius:999px;border:1px solid #3b3450;background:none;color:#f3eef6;font:600 14px "Segoe UI",system-ui,sans-serif;cursor:pointer}button.b:hover{background:#2c2639}
+button.b.p{background:linear-gradient(135deg,#ffb347,#ff7c1f 60%,#ff5d73);border:0;color:#1d1020}button.b.p:hover{filter:brightness(1.08);background:linear-gradient(135deg,#ffb347,#ff7c1f 60%,#ff5d73)}
+button.b:disabled{opacity:.35;cursor:default;filter:none}
+.guide{margin-top:14px;display:grid;gap:9px}.rw{display:grid;grid-template-columns:104px 1fr;gap:12px;align-items:start;font-size:12.5px;line-height:1.45;color:#a69fb5}
+.rw kbd{justify-self:start;padding:2px 9px;border-radius:6px;background:#1d1927;border:1px solid #3b3450;color:#f3eef6;font:600 12px "Segoe UI",system-ui,sans-serif;white-space:nowrap}
+.note{margin-top:12px;font-size:12.5px;color:#ffb347}
+.path{margin:18px 0 12px;padding:12px 14px;background:#1d1927;border:1px solid #332d44;border-radius:10px;color:#f3eef6;font:13px ui-monospace,Consolas,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;user-select:text}
+.sm{font-size:12.5px}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><clipPath id="emc"><path transform="translate(57 90) rotate(-9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z"/></clipPath><linearGradient id="emg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffb347"/><stop offset="1" stop-color="#ff4f9a"/></linearGradient>
+<symbol id="em" viewBox="0 0 150 150"><path transform="translate(57 90) rotate(-9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z" fill="#e046cf"/><path transform="translate(93 90) rotate(9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z" fill="#ff7c1f"/><g clip-path="url(#emc)"><path transform="translate(93 90) rotate(9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z" fill="url(#emg)"/></g></symbol></defs></svg>
+<aside class="side"><svg width="88" height="88" viewBox="0 0 150 150" aria-hidden="true"><use href="#em"/></svg><div class="brand">ember<b>.</b></div><div class="tag">a browser by lareon</div>
+<ul class="steps"><li class="on" id="n1"><i>1</i>Welcome</li><li id="n2"><i>2</i>How it works</li><li id="n3"><i>3</i>Terms</li><li id="n4"><i>4</i>Downloads</li><li id="n5"><i>5</i>Finish</li></ul></aside>
+<main class="main"><div class="drag"></div><div class="win"><button id="min" aria-label="Minimize">&#8211;</button><button id="x" aria-label="Close">&#10005;</button></div>
+<section class="pg on" id="p1"><h1>Meet Ember</h1><p>A calmer way to browse, with protection built in.</p>
+<div class="pts"><div><b>Warns you first</b><span>Unsafe, scam and adult sites get a warning before they open.</span></div><div><b>Private tabs</b><span>A private tab’s site data is erased when you close it.</span></div><div><b>Stays on your device</b><span>Your history, tabs and downloads list are kept locally.</span></div></div>
+<div class="foot"><button class="b" id="c1">Cancel</button><button class="b p" id="g1">Next</button></div></section>
+<section class="pg" id="p2"><h1>How Ember works</h1><p>Five things worth knowing. <span class="sm">(<span class="mod">Ctrl</span> is Command on a Mac.)</span></p>
+<div class="guide">
+<div class="rw"><kbd><span class="mod">Ctrl</span>+T</kbd><span>Open a new tab. Add Shift and press N for a private tab.</span></div>
+<div class="rw"><kbd><span class="mod">Ctrl</span>+B</kbd><span>Hide or show the tab dock down the side. Add Shift to move it to the other side.</span></div>
+<div class="rw"><kbd><span class="mod">Ctrl</span>+L</kbd><span>Jump to the address bar. The lock beside it is green, amber or red to show how safe a site is.</span></div>
+<div class="rw"><kbd><span class="mod">Ctrl</span>+W</kbd><span>Close a tab. Add Shift and press T to bring back the last one you closed.</span></div>
+<div class="rw"><kbd><span class="mod">Ctrl</span>+ / −</kbd><span>Zoom in or out. Press 0 to reset the zoom.</span></div></div>
+<div class="note">Ember warns you before opening unsafe, scam or adult pages. The choice stays yours.</div>
+<div class="foot"><button class="b" id="b2">Back</button><button class="b p" id="g2">Next</button></div></section>
+<section class="pg" id="p3"><h1>Terms of service</h1><p>Scroll to the end to continue.</p><div class="terms" id="terms" tabindex="0">Last updated: October 2026
+
+1. About these terms
+Ember is a web browser made by Lareon (&quot;we&quot;, &quot;us&quot;). By installing or using Ember you agree to these terms. If you do not agree, do not install Ember.
+
+2. Your license
+We give you a free, personal, non-exclusive license to install and use Ember on your own devices. You may not resell Ember or remove Lareon&#x27;s notices from it.
+
+3. Safety features
+Ember tries to warn you about unsafe, scam and adult sites. These warnings are a help, not a guarantee. No tool catches everything, so please stay careful online.
+
+4. Your data
+Your browsing history, tabs and downloads list are stored on your device. You can clear them or turn history off in the Library. Searches are sent to the search sources that provide results.
+
+5. Websites you visit
+Websites are run by other people. We are not responsible for their content or for what they do.
+
+6. No warranty
+Ember is an early release (version 0.9) and is provided &quot;as is&quot;, without warranties of any kind. We do not promise that it will be error-free or always available.
+
+7. Limit of liability
+To the extent the law allows, Lareon is not liable for any loss or damage that results from using Ember.
+
+8. Changes
+We may update Ember and these terms. If you keep using Ember after an update, you accept the updated terms.
+
+9. Contact
+Questions about these terms: lareon.org</div>
+<div class="hint" id="hint">Keep scrolling. Please read the terms before you agree.</div>
+<div class="ck" id="ck"><span id="cb"></span>I have read and agree to the Ember Terms of Service</div>
+<div class="foot"><button class="b" id="c3">Decline</button><button class="b p" id="g3" disabled>Agree and continue</button></div></section>
+<section class="pg" id="p4"><h1>Where should downloads go?</h1><p>Ember saves the files you download to this folder.</p>
+<div class="path" id="dlp">Loading…</div><div><button class="b" id="pk">Choose another folder</button></div>
+<p class="sm" style="margin-top:14px">You can keep the default. Ember saves files here and nowhere else.</p>
+<div class="foot"><button class="b" id="b4">Back</button><button class="b p" id="g4">Next</button></div></section>
+<section class="pg" id="p5"><div class="big"><svg width="72" height="72" viewBox="0 0 150 150" aria-hidden="true"><use href="#em"/></svg><h1>Ember is ready</h1><p>Setup is done. Your browser opens next.</p></div>
+<div class="foot"><button class="b p" id="g5">Launch Ember</button></div></section></main>
+<script>
+const $=id=>document.getElementById(id);
+const mod=/Mac/i.test(navigator.platform||navigator.userAgent)?'\u2318':'Ctrl';
+document.querySelectorAll('.mod').forEach(e=>e.textContent=mod);
+function show(n){[1,2,3,4,5].forEach(i=>{$('p'+i).classList.toggle('on',i===n);$('n'+i).className=i===n?'on':i<n?'ok':''});if(n===3)setTimeout(chk,60);}
+$('g1').onclick=()=>show(2);$('b2').onclick=()=>show(1);$('g2').onclick=()=>show(3);
+const t=$('terms'),ck=$('ck');let read=false,agreed=false,dir='';
+function upd(){$('g3').disabled=!(read&&agreed);ck.classList.toggle('live',read);ck.classList.toggle('on',agreed);$('cb').textContent=agreed?'\u2713':'';}
+function chk(){if(t.scrollTop+t.clientHeight>=t.scrollHeight-6){read=true;$('hint').textContent='Thanks. Tick the box to agree.';upd();}}
+t.addEventListener('scroll',chk);
+ck.onclick=()=>{if(!read)return;agreed=!agreed;upd();};
+$('g3').onclick=()=>{if(read&&agreed)show(4);};
+window.setup.downloadsDefault().then(d=>{dir=d||'';$('dlp').textContent=dir||'Your Downloads folder';}).catch(()=>{$('dlp').textContent='Your Downloads folder';});
+$('pk').onclick=()=>window.setup.pickFolder().then(d=>{if(d){dir=d;$('dlp').textContent=d;}}).catch(()=>{});
+$('b4').onclick=()=>show(3);$('g4').onclick=()=>show(5);
+$('g5').onclick=()=>window.setup.done({downloadDir:dir});
+$('c1').onclick=$('c3').onclick=$('x').onclick=()=>window.setup.quit();
+$('min').onclick=()=>window.setup.minimize();
+upd();
+</script></body></html>
