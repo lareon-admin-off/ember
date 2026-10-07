@@ -17,6 +17,37 @@ ipcMain.handle('setup:folder', async () => {
   return r.canceled || !r.filePaths[0] ? null : r.filePaths[0];
 });
 
+const welcomeFlag = () => path.join(app.getPath('userData'), 'welcome-seen');
+let wwin = null, wfire = null;
+// Long welcome page with the guide. With a callback it is the first-run page: the browser opens when it closes.
+exports.showWelcome = afterClose => {
+  if (wwin && !wwin.isDestroyed()) { wwin.focus(); return; }
+  const first = typeof afterClose === 'function';
+  let fired = false;
+  wfire = () => { if (fired) return; fired = true; if (first) afterClose(); };
+  wwin = new BrowserWindow({
+    width: 920, height: 740, minWidth: 560, minHeight: 480, frame: false, show: false, center: true,
+    backgroundColor: '#16131f', title: 'Welcome to Ember', icon: path.join(__dirname, 'assets', 'icon.png'),
+    webPreferences: { preload: path.join(__dirname, 'welcome-preload.js'), sandbox: true, contextIsolation: true, nodeIntegration: false }
+  });
+  wwin.removeMenu();
+  wwin.once('ready-to-show', () => wwin.show());
+  wwin.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  wwin.webContents.on('will-navigate', e => e.preventDefault());
+  wwin.loadFile(path.join(__dirname, 'welcome-page.html'), { query: { first: first ? '1' : '0' } });
+  wwin.on('close', () => { if (wfire) wfire(); });
+  wwin.on('closed', () => { wwin = null; });
+  if (first) { try { fs.writeFileSync(welcomeFlag(), String(Date.now())); } catch (_) {} }
+};
+ipcMain.on('welcome:min', () => { if (wwin && !wwin.isDestroyed()) wwin.minimize(); });
+ipcMain.on('welcome:start', () => { if (wwin && !wwin.isDestroyed()) { if (wfire) wfire(); wwin.close(); } });
+// F1 reopens the welcome page and guide from anywhere in the browser (once setup is done)
+app.on('web-contents-created', (_, wc) => {
+  wc.on('before-input-event', (e, input) => {
+    if (input.type === 'keyDown' && input.key === 'F1' && app.isReady() && (completed || fs.existsSync(flag()))) { e.preventDefault(); exports.showWelcome(); }
+  });
+});
+
 exports.needed = () => !completed && (!!process.env.EMBER_WELCOME || !fs.existsSync(flag()));
 
 exports.run = onDone => {
@@ -40,8 +71,9 @@ exports.run = onDone => {
     const dir = opts && typeof opts.downloadDir === 'string' ? opts.downloadDir : '';
     try { if (dir && fs.statSync(dir).isDirectory()) fs.writeFileSync(settingsFile(), JSON.stringify({ ...readSettings(), downloadDir: dir })); } catch (_) {}
     try { fs.writeFileSync(flag(), String(Date.now())); } catch (_) {}
+    const seen = fs.existsSync(welcomeFlag());
+    if (!seen || process.env.EMBER_WELCOME) exports.showWelcome(onDone); else onDone();
     if (win) win.close();
-    onDone();
   });
   ipcMain.once('setup:quit', () => app.quit());
   ipcMain.on('setup:min', () => { if (win) win.minimize(); });
