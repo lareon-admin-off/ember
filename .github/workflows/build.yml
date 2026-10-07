@@ -32,9 +32,23 @@ jobs:
       - name: Find the app folder
         shell: bash
         run: |
-          dir=$(dirname "$(find . -maxdepth 4 -name setup-preload.js -not -path '*/node_modules/*' | head -n 1)")
-          if [ "$dir" = "." ] || [ -z "$dir" ]; then
-            mkdir app && git ls-files -z | grep -zv '^\.github/' | xargs -0 -I{} cp --parents {} app/ 2>/dev/null || true
+          dir=""
+          while IFS= read -r f; do
+            d=$(dirname "$f")
+            if [ -f "$d/setup-preload.js" ] && [ -f "$d/main.js" ] && [ -f "$d/welcome.html" ]; then dir="$d"; break; fi
+          done < <(find . -maxdepth 4 -name package.json -not -path '*/node_modules/*')
+          if [ -z "$dir" ]; then
+            echo "No folder contains package.json, main.js, welcome.html and setup-preload.js together. Files found:"
+            find . -maxdepth 4 -not -path './.git/*' | head -60
+            exit 1
+          fi
+          echo "Building from: $dir"
+          if [ "$dir" = "." ]; then
+            mkdir app
+            for x in * .[!.]*; do
+              case "$x" in app|.git|.github|'*') continue;; esac
+              [ -e "$x" ] && mv "$x" app/
+            done
           else
             mv "$dir" app
           fi
