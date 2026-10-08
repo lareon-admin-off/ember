@@ -81,3 +81,4 @@ exports.run = onDone => {
   ipcMain.once('setup:quit', () => app.quit());
   ipcMain.on('setup:min', () => { if (win) win.minimize(); });
 };
+require('./updater'); // automatic updates
