@@ -75,8 +75,7 @@ exports.run = onDone => {
     const dir = opts && typeof opts.downloadDir === 'string' ? opts.downloadDir : '';
     try { if (dir && fs.statSync(dir).isDirectory()) fs.writeFileSync(settingsFile(), JSON.stringify({ ...readSettings(), downloadDir: dir })); } catch (_) {}
     try { fs.writeFileSync(flag(), String(Date.now())); } catch (_) {}
-    const seen = fs.existsSync(welcomeFlag());
-    if (!seen || process.env.EMBER_WELCOME) exports.showWelcome(onDone); else onDone();
+    exports.showWelcome(onDone); // the wizard only runs when setup is not done, so the welcome slides always follow it
     if (win) win.close();
   });
   ipcMain.once('setup:quit', () => app.quit());

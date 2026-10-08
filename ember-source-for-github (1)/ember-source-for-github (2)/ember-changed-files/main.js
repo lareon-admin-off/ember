@@ -14,7 +14,8 @@ function create() {
   win = new BrowserWindow({
     width: 1280, height: 800, minWidth: 720, minHeight: 480,
     backgroundColor: '#16141f', show: false,
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : process.platform === 'win32' ? 'hidden' : 'default',
+    ...(process.platform === 'win32' ? { titleBarOverlay: { color: '#1e1c2a', symbolColor: '#f3eef6', height: 44 } } : {}),
     icon: path.join(__dirname, 'assets', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -454,3 +455,4 @@ ipcMain.handle('search:query', async (_, q, pageNo) => {
   });
   return results.length ? {results, page} : {error:'unavailable', page};
 });
+

@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ember</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#16141f;--surface:#1e1c2a;--surface2:#252336;--border:#2e2b3f;--accent:#ff7c1f;--accent2:#c84bff;--text:#e2e0ee;--muted:#7a7890;--grad:linear-gradient(135deg,var(--accent),var(--accent2))}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font:13px/1.4 Inter,-apple-system,"SF Pro Display","Segoe UI",system-ui,sans-serif;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+b{color:var(--accent);font-weight:inherit}
+#app{display:flex;height:100%}
+#side{width:224px;background:var(--surface);display:flex;flex-direction:column;padding:44px 10px 10px;-webkit-app-region:drag;border-right:1px solid var(--border)}
+#side button,#side input{-webkit-app-region:no-drag}
+.brand{display:flex;align-items:center;gap:9px;padding:0 6px 16px;font:600 20px Inter,-apple-system,system-ui,sans-serif;letter-spacing:-1px}
+.brand small{display:block;font:500 11px Inter,system-ui,sans-serif;color:var(--muted);letter-spacing:0}
+#tabs{flex:1;overflow:auto;display:flex;flex-direction:column;gap:3px}
+.tab{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;border-left:3px solid transparent;text-align:left;width:100%;-webkit-app-region:no-drag}
+.tab:hover{background:var(--surface2)}
+.tab.on{background:var(--bg);border-left-color:var(--accent)}
+.tab span{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.tab i{font-style:normal;color:var(--muted);padding:0 5px;border-radius:6px}
+.tab i:hover{background:var(--surface2);color:var(--text)}
+#add,#addp{padding:9px 10px;border-radius:10px;color:var(--muted);text-align:left}
+#add:hover,#addp:hover{background:var(--surface2);color:var(--text)}
+#main{flex:1;display:flex;flex-direction:column;min-width:0}
+#top{display:flex;gap:6px;padding:8px 10px;background:var(--surface);border-bottom:1px solid var(--border);-webkit-app-region:drag}
+#top button,#top input{-webkit-app-region:no-drag}
+#top button{width:32px;border-radius:999px;color:var(--muted)}
+#top button:hover{background:var(--surface2);color:var(--text)}
+#top button.mail{width:auto;padding:0 16px;color:var(--text);border:1px solid var(--border);font-weight:600}
+#top button.mail.on{background:var(--accent);border-color:var(--accent);color:#fff}
+#bar{flex:1;padding:8px 16px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--text);font:inherit}
+#bar:focus{border-color:var(--accent);outline:0}
+#stage{flex:1;display:flex;min-height:0}
+#views{flex:1;position:relative;background:var(--bg)}
+webview{position:absolute;inset:0;width:100%;height:100%}
+#mail{width:420px;border-left:1px solid var(--border);position:relative;background:var(--bg);display:none}
+#start{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.brand small.by{display:flex;align-items:center;gap:5px}
+.eyebrow{display:flex;align-items:center;gap:8px;font-weight:600;font-size:11px;letter-spacing:2px;color:var(--accent)}
+#start h1{font:700 84px/1.05 Inter,-apple-system,"SF Pro Display",system-ui,sans-serif;letter-spacing:-3px}
+#start p{color:var(--muted);font-size:16px}
+#start form{width:min(520px,80%);margin:22px 0 10px}
+#q{width:100%;padding:14px 22px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:15px}
+#q:focus{border-color:var(--accent);outline:0}
+.links{display:flex;gap:10px}
+.links button{padding:14px 32px;border-radius:100px;font-size:15px;background:var(--surface2);border:1px solid var(--border);font-weight:600}
+.links button:hover{background:var(--border)}
+.links button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.links button.primary:hover{opacity:.9;background:var(--accent)}
+.motto{margin-top:30px;font:800 22px Inter,system-ui,sans-serif;letter-spacing:-.5px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.star{display:inline-block;vertical-align:middle;flex:none}
+#start{isolation:isolate}
+#wm{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:.05;z-index:-1}
+#wm svg{width:min(70vh,60%);height:auto}
+.tab em{display:flex;font-style:normal}
+#signin{margin:0 0 10px;padding:10px 14px;border-radius:100px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;gap:8px;font-weight:600;-webkit-app-region:no-drag}
+#signin:hover{background:var(--border)}
+.foot{padding:12px 6px 2px;border-top:1px solid var(--border);color:var(--muted);font-size:11px;display:flex;align-items:center;gap:7px}
+.foot b{color:var(--text);font-weight:600}
+#lstar{display:none;align-items:center;padding:0 4px}
+#mail.open{display:flex;flex-direction:column}
+#mailhead{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);font-weight:600;font-size:15px;letter-spacing:-.3px}
+#mailhead b{color:var(--accent)}
+.band{position:absolute;bottom:0;left:0;right:0;text-align:center;padding:14px;background:var(--surface);border-top:1px solid var(--border);color:var(--muted);font-size:12px}
+.band strong{color:var(--accent);font-weight:600}
+#results{position:absolute;inset:0;overflow:auto;background:var(--bg);display:none;padding:32px 24px}
+.rin{max-width:680px;margin:0 auto}.rh{color:var(--muted);margin-bottom:22px;font-weight:600}.rh b{color:var(--accent)}
+.res{position:relative;margin-bottom:18px;padding:18px 20px;border:1px solid var(--border);background:linear-gradient(145deg,var(--surface),rgba(37,35,54,.72));border-radius:16px;transition:transform .15s,border-color .15s,background .15s;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.res:hover{transform:translateY(-1px);border-color:#45405c;background:var(--surface2)}
+.res a{color:#ff9b52;font-size:18px;font-weight:650;display:block;cursor:pointer;letter-spacing:-.2px}.res a:hover{text-decoration:underline;color:#ffb273}
+.res small{color:#8f8ba5;display:block;margin:5px 0 7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}.res p{color:#b9b5c8;line-height:1.55;max-width:650px}
+.result-logo{width:28px;height:28px;object-fit:contain;border-radius:8px;float:right;margin-left:12px}.result-top{display:flex;align-items:center;gap:8px;margin-bottom:5px}.result-num{color:#68647b;font-size:11px;font-weight:700;min-width:18px}.trust{display:inline-flex;align-items:center;gap:5px;margin-top:9px;padding:4px 8px;border-radius:999px;background:rgba(255,124,31,.1);border:1px solid rgba(255,124,31,.22);color:#ffad6a;font-size:10px;font-weight:700}.trust svg{width:12px;height:12px}
+#results{padding:30px 28px}.search-head{display:flex;align-items:center;gap:12px;margin-bottom:8px}.search-head img{width:32px;height:32px}.search-head h2{font-size:21px;letter-spacing:-.5px}.search-sub{color:var(--muted);font-size:12px;margin-bottom:22px}.search-sub b{color:var(--text);font-weight:600}
+
+/* Ember Search — familiar layout, Ember personality */
+#results{background:var(--bg);color:var(--text);padding:0;overflow:auto;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.search-page{max-width:940px;margin:0 auto;padding:30px 38px 70px}
+.search-brand{display:flex;align-items:center;gap:11px;margin-bottom:20px}.search-brand img{width:38px;height:38px}.search-brand .word{font-size:25px;font-weight:700;letter-spacing:-1.1px;color:var(--text)}.search-brand .word b,.search-brand .word span{color:var(--accent)}
+.searchbox{height:50px;border:1px solid var(--border);border-radius:26px;display:flex;align-items:center;padding:0 12px 0 18px;background:var(--surface);box-shadow:0 8px 24px rgba(0,0,0,.16);margin-bottom:18px;transition:.15s}.searchbox:focus-within{box-shadow:0 10px 30px rgba(0,0,0,.24);border-color:#555064}.searchbox input{flex:1;border:0;outline:0;font:15px Inter;color:var(--text);background:transparent}.searchbox button{font-size:19px;color:var(--muted);padding:8px 11px;border-radius:50%}.searchbox button:hover{background:var(--surface2);color:var(--text)}
+.search-tabs{height:40px;border-bottom:1px solid var(--border);display:flex;gap:24px;align-items:flex-end;margin-bottom:22px}.search-tabs span{padding:0 3px 11px;color:var(--muted);font-size:13px}.search-tabs .active{color:#ff9b52;border-bottom:3px solid var(--accent)}
+.search-meta{font-size:12px;color:var(--muted);margin-bottom:22px}.search-meta b{color:var(--text);font-weight:600}
+.result{padding:0 0 23px;margin:0 0 22px;border:0;border-bottom:1px solid rgba(255,255,255,.07);background:transparent;box-shadow:none}.result:hover{transform:none;background:transparent;border-bottom-color:rgba(255,124,31,.25)}.result .result-url{display:flex;align-items:center;gap:8px;color:#9d99ad;font-size:12px;margin-bottom:5px}.result .favicon{width:19px;height:19px;border-radius:6px;object-fit:contain;background:var(--surface2)}.result a{font-size:19px;line-height:1.3;color:#ff9b52;font-weight:650;letter-spacing:-.15px;text-decoration:none}.result a:hover{text-decoration:underline;color:#ffb273}.result p{font-size:13px;line-height:1.6;color:#bbb7c7;max-width:740px;margin-top:6px}.result .trust{margin-top:9px;background:linear-gradient(135deg,rgba(224,70,207,.13),rgba(255,124,31,.13));border:1px solid rgba(255,124,31,.3);color:#ffb347;font-size:11px;width:max-content}.result .trust::before{content:'✦';color:#e046cf;margin-right:1px}
+.search-loading,.search-empty{min-height:260px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--muted);gap:10px}.search-empty h3{font-size:21px;color:var(--text);letter-spacing:-.4px}.search-empty p{max-width:430px;line-height:1.6}.search-empty .ember-face{font-size:34px;margin-bottom:2px}.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-right-color:#e046cf;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.web-error{position:absolute;inset:0;z-index:5;background:rgba(22,20,31,.98);display:flex;align-items:center;justify-content:center;text-align:center;padding:30px;animation:errorIn .22s ease-out}.web-error-card{max-width:560px;padding:42px 44px;border:1px solid #3a354c;background:linear-gradient(145deg,#211e2e,#181622);border-radius:28px;box-shadow:0 28px 90px rgba(0,0,0,.5)}.web-error-card img{width:76px;height:76px;margin-bottom:18px;filter:drop-shadow(0 8px 20px rgba(255,124,31,.18))}.web-error-card h2{font-size:28px;letter-spacing:-.8px;margin-bottom:9px}.web-error-card p{color:#aaa6b8;line-height:1.6;margin-bottom:18px}.web-error-card code{display:block;background:#171520;border:1px solid #302c40;padding:10px 12px;border-radius:10px;color:#898497;font-size:11px;margin-bottom:20px}.web-error-card button{padding:11px 22px;border-radius:999px;background:linear-gradient(135deg,var(--accent),#e046cf);color:#fff;font-weight:750;box-shadow:0 8px 22px rgba(224,70,207,.18)}.web-error-card button:hover{filter:brightness(1.08)}@keyframes errorIn{from{opacity:0;transform:scale(.985)}to{opacity:1;transform:scale(1)}}
+#ltrust{display:none;align-items:center;gap:7px;margin:0 6px;padding:5px 10px;border-radius:999px;background:linear-gradient(135deg,rgba(232,75,216,.13),rgba(255,122,47,.11));border:1px solid rgba(255,122,47,.28);color:#ffb08b;font-size:11px;font-weight:700;white-space:nowrap;box-shadow:0 3px 14px rgba(232,75,216,.08)}.trust-shield{width:15px;height:17px;display:inline-block}
+
+.coal-icon{width:74px;height:74px;display:block;filter:drop-shadow(0 10px 22px rgba(0,0,0,.35))}.ember-face .coal-icon{width:68px;height:68px;margin:0 auto 12px}.ember-face{display:flex;align-items:center;justify-content:center;min-height:74px}
+.error-brand{display:inline-flex;align-items:center;gap:7px;margin-bottom:16px;color:#ffb08b;font-weight:750;font-size:12px;letter-spacing:.2px}.error-brand img{width:18px;height:18px}.shield{width:19px;height:22px}.ember-error-brand{color:#ff9b52}.error-icon{width:74px;height:74px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;border-radius:24px;background:radial-gradient(circle at 30% 25%,rgba(255,124,31,.22),rgba(224,70,207,.08));border:1px solid #3a354c;color:#ff9b52;font-size:32px}.error-icon .shield{width:38px;height:43px}.error-home{margin-left:8px;padding:11px 18px;border-radius:999px;background:#242130;color:#c8c3d5;border:1px solid #3a354c;font-weight:700}.error-home:hover{background:#2b2739}.result{position:relative}.result.featured{padding:20px 22px;border:1px solid rgba(255,124,31,.2);border-radius:20px;background:linear-gradient(135deg,rgba(255,124,31,.07),rgba(224,70,207,.035));box-shadow:0 12px 35px rgba(0,0,0,.16)}.result.featured a{font-size:20px}.result.compact{padding:13px 15px;border-radius:15px;background:rgba(255,255,255,.018)}.result.compact p{display:none}.result.lareon-result{border-color:rgba(232,75,216,.3);background:linear-gradient(135deg,rgba(232,75,216,.09),rgba(255,122,47,.045))}.trust{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:4px 9px;border-radius:999px;background:rgba(232,75,216,.11);border:1px solid rgba(255,122,47,.25);color:#ffb08b;font-size:10px;font-weight:750}.trust .shield{width:13px;height:15px}.result-number{position:absolute;right:16px;top:14px;font-size:10px;color:#706a80;font-weight:700}.search-list{display:flex;flex-direction:column;gap:10px}
+
+/* Ember 23 result chassis */
+.res{
+  margin:0 0 12px;
+  padding:16px 18px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;
+  background:linear-gradient(135deg,rgba(35,31,47,.96),rgba(25,22,34,.96));
+  box-shadow:0 5px 18px rgba(0,0,0,.18);
+  transition:transform .15s ease,border-color .15s ease,background .15s ease;
+}
+.res:hover{
+  transform:translateY(-1px);
+  border-color:rgba(211,125,255,.22);
+  background:linear-gradient(135deg,rgba(42,36,55,.98),rgba(27,23,38,.98));
+}
+.result-top{display:flex;align-items:flex-start;gap:11px;margin-bottom:5px}
+.result-num{flex:0 0 auto;min-width:25px;color:#9c91a8;font-size:11px;font-weight:700;letter-spacing:.08em;padding-top:4px}
+.result-top a{color:#f4edf8;font-size:16px;line-height:1.3;font-weight:650;text-decoration:none;cursor:pointer}
+.result-top a:hover{color:#d99cff}
+.res small{display:block;margin:0 0 8px 36px;color:#a99bb4;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.res p{margin:0 0 0 36px;color:#c8becf;font-size:13px;line-height:1.55}
+.trust{display:inline-flex;align-items:center;gap:7px;margin:11px 0 0 36px;padding:5px 9px;border-radius:8px;background:rgba(137,71,145,.14);border:1px solid rgba(213,137,220,.15);color:#dcb6df;font-size:11px}
+#results{overflow-y:auto;overflow-x:hidden}
+
+
+/* ---- Ember: coal icon, Lareon trusted badges, paging footer ---- */
+@keyframes clSmoke{0%{transform:translateY(4px);opacity:0}25%{opacity:.55}100%{transform:translateY(-9px);opacity:0}}
+@keyframes clGlow{0%,100%{opacity:.25}50%{opacity:.6}}
+@keyframes ltShine{0%{transform:translateX(-140%) skewX(-18deg)}60%,100%{transform:translateX(260%) skewX(-18deg)}}
+.coal-icon .cl-smoke{animation:clSmoke 4.5s ease-in-out infinite}.coal-icon .cl-smoke.s2{animation-delay:1.8s}
+.coal-icon .cl-glow,.coal-icon .cl-crack{animation:clGlow 3.6s ease-in-out infinite}.coal-icon .cl-crack.c2{animation-delay:1.2s;opacity:.3}
+.coal-icon{width:96px;height:96px;filter:drop-shadow(0 12px 24px rgba(0,0,0,.45))}
+.error-icon{width:116px;height:116px;border-radius:34px;background:radial-gradient(circle at 50% 32%,rgba(255,124,31,.1),rgba(17,16,24,.6) 70%);border:1px solid #302c40}
+.error-icon .coal-icon{width:98px;height:98px}
+.ember-face .coal-icon{width:84px;height:84px}
+#ltrust{position:relative;overflow:hidden;gap:8px;padding:5px 13px 5px 9px;border:1px solid transparent;background:linear-gradient(#1d1a28,#1d1a28) padding-box,linear-gradient(120deg,#ff7a2f,#e84bd8 55%,#ff7a2f) border-box;color:#f1e6ef;box-shadow:0 4px 18px rgba(232,75,216,.14),inset 0 0 12px rgba(255,122,47,.06)}
+#ltrust::after{content:'';position:absolute;top:0;bottom:0;left:0;width:34%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.22),transparent);animation:ltShine 5s ease-in-out infinite;pointer-events:none}
+#ltrust .trust-shield{width:15px;height:17px;filter:drop-shadow(0 0 6px rgba(255,122,47,.55))}
+#ltrust .lt-text{font-size:11px;font-weight:600;letter-spacing:.35px;color:#cdbfd0}
+#ltrust .lt-text b{font-weight:800;background:linear-gradient(120deg,#ffb347,#ff7a2f 45%,#ff6bd6);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:.2px}
+.result .trust{position:relative;overflow:hidden;gap:7px;margin:12px 0 0;padding:5px 12px 5px 8px;border:1px solid transparent;border-radius:999px;background:linear-gradient(#1d1a28,#1d1a28) padding-box,linear-gradient(120deg,#ff7a2f,#e84bd8 55%,#ff7a2f) border-box;color:#cdbfd0;font-size:11px;font-weight:600;letter-spacing:.3px;width:max-content;box-shadow:0 4px 16px rgba(232,75,216,.12)}
+.result .trust::before{content:none}
+.result .trust::after{content:'';position:absolute;top:0;bottom:0;left:0;width:34%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.2),transparent);animation:ltShine 6s ease-in-out infinite;pointer-events:none}
+.result .trust .shield{width:13px;height:15px;filter:drop-shadow(0 0 5px rgba(255,122,47,.5))}
+.result .trust b{font-weight:800;background:linear-gradient(120deg,#ffb347,#ff7a2f 45%,#ff6bd6);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.result.lareon-result{box-shadow:0 0 0 1px rgba(232,75,216,.18),0 10px 34px rgba(232,75,216,.08)}
+.result.lareon-result::before{content:'';position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:3px;background:linear-gradient(#ff7a2f,#e84bd8)}
+.search-foot{display:flex;align-items:center;justify-content:center;gap:12px;padding:26px 0 54px;color:var(--muted);font-size:12px}
+.search-foot .spinner{width:20px;height:20px;border-width:2px}
+.more-btn{padding:11px 26px;border-radius:999px;background:#242130;color:#e7e2f2;border:1px solid #3a354c;font-weight:700}.more-btn:hover{background:#2b2739}
+.error-home+.error-home{margin-left:8px}
+
+.search-foot{flex-direction:column;gap:6px}
+.pager{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.pg{min-width:40px;padding:9px 13px;border-radius:12px;background:#242130;color:#c8c3d5;border:1px solid #3a354c;font-weight:700;font-size:12px}
+.pg:hover{background:#2b2739}.pg.on{background:linear-gradient(135deg,var(--accent),#e046cf);color:#fff;border-color:transparent}
+.pager-note{color:var(--muted);font-size:12px;margin-bottom:10px}
+/* ---- Error screens: one banked-ember look ---- */
+.web-error{background:var(--bg);overflow:hidden}
+.err{max-width:460px;width:100%;display:flex;flex-direction:column;align-items:center;text-align:center;padding:8px 24px;animation:errIn .4s cubic-bezier(.2,.8,.2,1)}
+.err .error-brand{margin-bottom:26px}
+.err-art{margin-bottom:22px;display:grid;place-items:center}
+.err-svg{width:92px;height:92px;filter:drop-shadow(0 0 22px rgba(255,124,31,.22))}
+.err-art .shield{width:54px;height:62px}
+.err-glow{animation:errBreath 3.4s ease-in-out infinite}
+.err h2{font-size:26px;letter-spacing:-.7px;margin-bottom:10px}
+.err p{color:#aaa6b8;line-height:1.6;margin-bottom:16px}
+.err-url{padding:4px 12px;border-radius:999px;background:#1b1927;border:1px solid var(--border);color:#a9a4b8;font:600 12px ui-monospace,SFMono-Regular,Menlo,monospace;margin-bottom:24px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.err-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:20px}
+.err-actions .error-home{margin:0}
+.err-primary{padding:11px 24px;border-radius:999px;background:linear-gradient(135deg,var(--accent),#e046cf);color:#fff;font-weight:750;box-shadow:0 8px 22px rgba(224,70,207,.2)}
+.err-primary:hover{filter:brightness(1.1)}
+.err code{display:block;color:#6f6a80;font-size:11px}
+@keyframes errIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes errBreath{0%,100%{opacity:.35}50%{opacity:.95}}
+
+/* ---- Motion: smooth transitions across the app ---- */
+button{transition:background-color .18s,color .18s,filter .18s,box-shadow .18s,transform .15s,border-color .18s}
+button:active{transform:scale(.97)}
+.tab{transition:background-color .18s,border-color .18s,transform .15s}
+.tab:hover{transform:translateX(2px)}
+.tab.enter{animation:tabIn .26s cubic-bezier(.2,.8,.2,1)}
+.tab i{transition:background-color .15s,color .15s}
+#bar{transition:border-color .2s,box-shadow .2s}
+#bar:focus{box-shadow:0 0 0 4px rgba(255,124,31,.14)}
+#start,#results{animation:viewIn .28s ease-out}
+.search-list .result{animation:resultIn .3s ease-out both;transition:transform .18s,box-shadow .18s,background-color .18s}
+.search-list .result:hover{transform:translateY(-2px)}
+#mail.open{animation:mailIn .3s cubic-bezier(.2,.8,.2,1)}
+.pg,.more-btn,.error-home{transition:background-color .15s,transform .15s}
+@keyframes tabIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+@keyframes viewIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes resultIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes mailIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+#top{position:relative}
+#loadbar{position:absolute;left:0;bottom:-1px;height:2px;width:0;opacity:0;background:linear-gradient(90deg,var(--accent),#e046cf);box-shadow:0 0 8px rgba(255,124,31,.6);pointer-events:none}
+.tab-fav{width:14px;height:14px;border-radius:3px;flex:none}
+.tab.closing{opacity:0;transform:translateX(-14px);transition:opacity .16s,transform .16s}
+html{scroll-behavior:smooth}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:#2e2b3f;border-radius:10px;border:2px solid transparent;background-clip:content-box}::-webkit-scrollbar-thumb:hover{background:#3a354c;background-clip:content-box;border:2px solid transparent}::-webkit-scrollbar-track{background:transparent}
+.err code{cursor:pointer;padding:5px 11px;border-radius:8px;background:#1b1927;border:1px solid var(--border);color:#8e89a0;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace;transition:color .15s,border-color .15s}
+.err code:hover{color:#e2e0ee;border-color:#3a354c}
+/* ---- Private mode, Library, toast ---- */
+body.private{--accent:#a66bff;--accent2:#6b7bff}
+body.private #side{background:#19152a}body.private #top{background:#1c1730}
+#privpill{display:none;align-items:center;gap:6px;padding:0 12px;border-radius:999px;background:rgba(166,107,255,.16);border:1px solid rgba(166,107,255,.4);color:#cdb4ff;font-weight:700;font-size:11px;letter-spacing:.3px;animation:viewIn .25s ease-out}
+body.private #privpill{display:flex}
+#privnote{display:none;position:absolute;left:50%;bottom:26px;transform:translateX(-50%);width:min(460px,90%);text-align:center;color:var(--muted);line-height:1.6;font-size:12px}
+body.private #privnote{display:block}#privnote b{color:#cdb4ff}
+#libbtn{padding:9px 10px;border-radius:10px;text-align:left;color:var(--muted);width:100%}
+#libbtn:hover{background:var(--surface2);color:var(--text)}
+#library{position:absolute;inset:0;overflow:auto;background:var(--bg);display:none;padding:36px 28px 70px;animation:viewIn .28s ease-out}
+.lib{max-width:720px;margin:0 auto}.lib h1{font-size:28px;letter-spacing:-.8px;margin-bottom:18px}
+.lib-tabs{display:flex;gap:6px;margin-bottom:18px}
+.lib-tabs button{padding:8px 16px;border-radius:999px;border:1px solid var(--border);color:var(--muted);font-weight:650}
+.lib-tabs button:hover{color:var(--text)}.lib-tabs button.on{background:linear-gradient(135deg,var(--accent),#e046cf);border-color:transparent;color:#fff}
+.lib-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;color:var(--muted);font-size:12px}
+.lib-sw{display:flex;align-items:center;gap:8px;cursor:pointer}.lib-sw input{accent-color:var(--accent)}
+.lib-clear,.lib-act{padding:6px 14px;border-radius:999px;background:#242130;border:1px solid #3a354c;color:#c8c3d5;font-weight:650;font-size:12px}
+.lib-clear:hover,.lib-act:hover{background:#2b2739}
+.lib-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid var(--border);border-radius:14px;background:var(--surface);margin-bottom:8px;transition:border-color .18s,transform .18s}
+.lib-row:hover{border-color:#3a354c;transform:translateY(-1px)}
+.lib-main{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:default}
+.lib-main[data-q]{cursor:pointer}.lib-main[data-q]:hover{color:var(--accent)}
+.lib-main small{display:block;color:var(--muted);margin-top:2px}.lib-main em{color:#cdb4ff;font-style:normal;font-size:10px;margin-left:6px}
+.lib-time{color:var(--muted);font-size:11px;white-space:nowrap}
+.lib-row i{font-style:normal;color:var(--muted);padding:0 6px;border-radius:6px;cursor:pointer}.lib-row i:hover{background:var(--surface2);color:var(--text)}
+.lib-prog{height:4px;border-radius:4px;background:#2a2638;margin-top:7px;overflow:hidden}
+.lib-prog i{display:block;height:100%;padding:0;background:linear-gradient(90deg,var(--accent),#e046cf);transition:width .3s}
+.lib-empty{padding:40px 0;text-align:center;color:var(--muted)}
+#toast{position:fixed;right:18px;bottom:18px;z-index:50;padding:10px 16px;border-radius:12px;background:#242130;border:1px solid #3a354c;color:var(--text);font-weight:600;max-width:320px;opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .25s,transform .25s}
+#toast.show{opacity:1;transform:none}
+/* ---- Site security: lock levels, panel, warning screens ---- */
+#sec{display:none;align-items:center;justify-content:center}
+#top button.sec.ok{color:#3ddc84}#top button.sec.mid{color:#ffb347}#top button.sec.bad{color:#ff5d73}#top button.sec.lareon{color:#ff7a2f}
+#secpanel{position:absolute;inset:0;z-index:6;background:var(--bg);display:none;align-items:center;justify-content:center;padding:30px;animation:viewIn .22s ease-out}
+.sp{max-width:480px;width:100%;display:flex;flex-direction:column;gap:16px}
+.sp-head{display:flex;gap:14px;align-items:flex-start}.sp-head svg{width:34px;height:34px;flex:none}
+.sp-head.ok{color:#3ddc84}.sp-head.mid{color:#ffb347}.sp-head.bad{color:#ff5d73}.sp-head.lareon{color:#ff9b52}
+.sp-head h2{font-size:22px;letter-spacing:-.5px;margin-bottom:4px}.sp-head p{color:#aaa6b8;line-height:1.55;font-size:13px;font-weight:400}
+.sp-host{font:600 13px ui-monospace,Menlo,monospace;color:#c8c3d5}
+.cert-rows{display:flex;flex-direction:column;gap:6px;padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--surface)}
+.cert-rows div{display:flex;justify-content:space-between;gap:16px;font-size:12px}.cert-rows span{color:var(--muted);flex:none}.cert-rows b{color:var(--text);font-weight:600;text-align:right;overflow-wrap:anywhere}
+.sp-note{color:var(--muted);font-size:12px;line-height:1.6}.sp .err-primary{align-self:flex-start}
+.web-error.bad{background:var(--bg)}
+.sec-adv{width:100%;text-align:left;margin-bottom:16px;border:1px solid var(--border);border-radius:14px;background:#17151f}
+.sec-adv summary{padding:11px 16px;cursor:pointer;color:var(--muted);font-weight:650;font-size:12px}.sec-adv[open] summary{border-bottom:1px solid var(--border)}
+.sec-body{padding:14px 16px;display:flex;flex-direction:column;gap:12px;color:#aaa6b8;font-size:12px;line-height:1.6}
+.sec-go{align-self:flex-start;padding:8px 16px;border-radius:999px;border:1px solid #3a354c;color:#c8c3d5;font-weight:700;font-size:12px}.sec-go:hover{background:#2b2739}
+webview{background:var(--bg);transition:opacity .2s}webview:not(.rdy){opacity:0}
+#sbar{display:none;align-items:center;gap:12px;padding:9px 14px;background:var(--surface2);border-bottom:1px solid var(--border);color:var(--text)}
+#sbar.on{display:flex;animation:viewIn .22s ease-out}
+.sb-ic{display:flex;color:#ffb347;flex:none}
+.sb-text{flex:1;min-width:0;font-weight:650}.sb-text small{display:block;margin-top:2px;color:var(--muted);font-weight:400}
+#sbar button{padding:7px 16px;border-radius:999px;border:1px solid #3a354c;color:#c8c3d5;font-weight:700;font-size:12px}
+#sbar button:hover{background:#2b2739}#sbar button.primary{background:linear-gradient(135deg,var(--accent),#e046cf);border-color:transparent;color:#fff}
+.result .favicon.ltr{display:grid;place-items:center;font:700 10px Inter,system-ui,sans-serif;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2))}
+.lib-main small.lib-risk{color:#ffb347}
+.warn-chip{display:inline-flex;margin-top:9px;padding:4px 10px;border-radius:999px;background:rgba(255,179,71,.1);border:1px solid rgba(255,179,71,.3);color:#ffb347;font-size:11px;font-weight:700}
+#side{flex:none;transition:margin .26s cubic-bezier(.2,.8,.2,1),visibility 0s}
+#dockbtn svg{display:block;margin:auto}body.dock-right #dockbtn svg{transform:scaleX(-1)}
+#dockmove{align-self:flex-start;margin:2px 0 0 auto;width:26px;height:26px;border-radius:8px;color:var(--muted);display:grid;place-items:center}#dockmove:hover{background:var(--surface2);color:var(--text)}
+body.dock-right #app{flex-direction:row-reverse}
+body.dock-right #side{border-right:0;border-left:1px solid var(--border)}
+body.dock-hidden #side{margin-left:-224px;visibility:hidden;transition:margin .26s cubic-bezier(.2,.8,.2,1),visibility 0s .26s}
+body.dock-hidden.dock-right #side{margin-left:0;margin-right:-224px}
+body.mac.dock-hidden #top,body.mac.dock-right #top{padding-left:84px}
+@media (prefers-reduced-motion:reduce){#side{transition:none}}
+@media (prefers-reduced-motion:reduce){*,*::before{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+body.win:not(.dock-right) #top{padding-right:146px} /* room for the Windows window buttons */
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="ltG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb347"/><stop offset=".55" stop-color="#ff7a2f"/><stop offset="1" stop-color="#e84bd8"/></linearGradient><linearGradient id="lareonStar" x1="0%" y1="100%" x2="0%" y2="0%"><stop offset="0%" stop-color="#ff7c1f"/><stop offset="100%" stop-color="#c84bff"/></linearGradient><linearGradient id="logoGrad" gradientUnits="userSpaceOnUse" x1="0" y1="142" x2="0" y2="8"><stop offset="0" stop-color="#ff7c1f"/><stop offset="1" stop-color="#c84bff"/></linearGradient></defs></svg>
+<div id="app">
+  <aside id="side">
+    <div class="brand">
+      <svg class="mark" width="34" height="34" viewBox="0 0 150 150" aria-hidden="true"><defs><clipPath id="ec1"><path transform="translate(57 90) rotate(-9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z"/></clipPath><linearGradient id="eg1" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffb347"/><stop offset="1" stop-color="#ff4f9a"/></linearGradient></defs><path transform="translate(57 90) rotate(-9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z" fill="#e046cf"/><path transform="translate(93 90) rotate(9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z" fill="#ff7c1f"/><g clip-path="url(#ec1)"><path transform="translate(93 90) rotate(9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z" fill="url(#eg1)"/></g></svg>
+      <div>ember<b>.</b><small class="by"><svg class="star" width="16" height="16" viewBox="0 0 150 150" aria-hidden="true"><path d="M75 28 Q55 45 55 70 Q40 65 25 75 Q42 80 53 90 Q45 105 48 122 Q60 110 68 95 Q70 112 75 128 Q80 112 82 95 Q90 110 102 122 Q105 105 97 90 Q108 80 125 75 Q110 65 95 70 Q95 45 75 28Z" fill="url(#lareonStar)"/></svg>by lareon</small></div>
+      <button id="dockmove" title="Move dock to the other side" aria-label="Move dock to the other side"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h13l-3-3M17 13H4l3 3"/></svg></button>
+    </div>
+    <div id="tabs"></div>
+    <button id="add">+ New tab</button>
+    <button id="addp">🕶 Private tab</button>
+    <button id="signin"><svg class="star" width="18" height="18" viewBox="0 0 150 150" aria-hidden="true"><path d="M75 28 Q55 45 55 70 Q40 65 25 75 Q42 80 53 90 Q45 105 48 122 Q60 110 68 95 Q70 112 75 128 Q80 112 82 95 Q90 110 102 122 Q105 105 97 90 Q108 80 125 75 Q110 65 95 70 Q95 45 75 28Z" fill="url(#lareonStar)"/></svg>Sign in with Lareon</button>
+    <div class="foot"><svg class="star" width="14" height="14" viewBox="0 0 150 150" aria-hidden="true"><path d="M75 28 Q55 45 55 70 Q40 65 25 75 Q42 80 53 90 Q45 105 48 122 Q60 110 68 95 Q70 112 75 128 Q80 112 82 95 Q90 110 102 122 Q105 105 97 90 Q108 80 125 75 Q110 65 95 70 Q95 45 75 28Z" fill="url(#lareonStar)"/></svg><span>Ember 0.9.0 · © 2026 <b>Lareon</b></span></div>
+  </aside>
+  <div id="main">
+    <div id="top">
+      <button id="dockbtn" aria-pressed="true"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="2.5" y="3.5" width="15" height="13" rx="3"/><path d="M7.5 3.5v13"/></svg></button>
+      <button id="back" title="Back" aria-label="Back">‹</button>
+      <button id="fwd" title="Forward" aria-label="Forward">›</button>
+      <button id="reload" title="Reload" aria-label="Reload">↻</button>
+      <span id="ltrust" title="Official Lareon site — verified by Ember"><svg class="trust-shield" viewBox="0 0 32 36" aria-hidden="true"><path d="M16 2 29 7v9c0 8.5-5.3 14.6-13 18C8.3 30.6 3 24.5 3 16V7z" fill="url(#ltG)"/><path d="M9.5 17.5l4.2 4.2 8.8-9.4" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="lt-text"><b>Lareon</b> trusted</span></span><span id="lstar" title="Official Lareon page"><svg class="star" width="20" height="20" viewBox="0 0 150 150" aria-hidden="true"><path d="M75 28 Q55 45 55 70 Q40 65 25 75 Q42 80 53 90 Q45 105 48 122 Q60 110 68 95 Q70 112 75 128 Q80 112 82 95 Q90 110 102 122 Q105 105 97 90 Q108 80 125 75 Q110 65 95 70 Q95 45 75 28Z" fill="url(#lareonStar)"/></svg></span>
+      <input id="bar" placeholder="Search Ember or enter an address" spellcheck="false" autocomplete="off">
+      <button class="mail" id="mailbtn">Mail</button>
+    </div>
+    <div id="stage">
+      <div id="views">
+        <div id="results"></div>
+        <div id="webError" class="web-error" style="display:none"></div>
+        <div id="start">
+          <div id="wm"><svg class="star" width="400" height="400" viewBox="0 0 150 150" aria-hidden="true"><defs><clipPath id="ec9"><path transform="translate(57 90) rotate(-9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z"/></clipPath><linearGradient id="eg9" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffb347"/><stop offset="1" stop-color="#ff4f9a"/></linearGradient></defs><path transform="translate(57 90) rotate(-9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z" fill="#e046cf"/><path transform="translate(93 90) rotate(9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z" fill="#ff7c1f"/><g clip-path="url(#ec9)"><path transform="translate(93 90) rotate(9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z" fill="url(#eg9)"/></g></svg></div>
+          <svg class="mark" width="124" height="124" viewBox="0 0 150 150" aria-hidden="true"><defs><clipPath id="ec2"><path transform="translate(57 90) rotate(-9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z"/></clipPath><linearGradient id="eg2" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffb347"/><stop offset="1" stop-color="#ff4f9a"/></linearGradient></defs><path transform="translate(57 90) rotate(-9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z" fill="#e046cf"/><path transform="translate(93 90) rotate(9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z" fill="#ff7c1f"/><g clip-path="url(#ec2)"><path transform="translate(93 90) rotate(9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z" fill="url(#eg2)"/></g></svg>
+          <div class="eyebrow"><svg class="star" width="22" height="22" viewBox="0 0 150 150" aria-hidden="true"><path d="M75 28 Q55 45 55 70 Q40 65 25 75 Q42 80 53 90 Q45 105 48 122 Q60 110 68 95 Q70 112 75 128 Q80 112 82 95 Q90 110 102 122 Q105 105 97 90 Q108 80 125 75 Q110 65 95 70 Q95 45 75 28Z" fill="url(#lareonStar)"/></svg>A BROWSER BY LAREON</div>
+          <h1>ember<b>.</b></h1>
+          <p>Fast, clean, and built around Lareon.</p>
+          <form id="sform"><input id="q" placeholder="Search Ember or type an address" autocomplete="off" spellcheck="false"></form>
+          <div class="links">
+            <button class="primary" data-go="https://lareon.org/mail.html">Open Lareon Mail</button>
+            <button data-go="https://lareon.org">lareon.org</button>
+            <button data-go="https://lareon.org/verify">Verify citizenship</button>
+          </div>
+          <div class="motto">Find your way. Leave no trace.</div>
+          <div class="band"><strong>Lareon</strong> · Ember &amp; Lareon Mail · <strong>Nation of Larsonia</strong></div>
+        </div>
+      </div>
+      <aside id="mail"></aside>
+    </div>
+  </div>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+const MAIL = 'https://lareon.org/mail.html';
+let tabs = [], active = null, n = 0, mailWv = null;
+const closed = [], closing = new Set();
+const sq = [];
+const warnSvg = () => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 20h19z" fill="currentColor" fill-opacity=".16"/><path d="M12 10v4.5M12 17.5h.01"/></svg>';
+function drawSbar() {
+  const bar = $('#sbar'); if (!bar) return;
+  const it = sq.find(x => !x.tab || x.tab === active);
+  if (!it) { bar.className = ''; bar.innerHTML = ''; return; }
+  bar.className = 'on';
+  bar.innerHTML = '<span class="sb-ic">' + warnSvg() + '</span><div class="sb-text">' + esc(it.text) + (it.sub ? '<small>' + esc(it.sub) + '</small>' : '') + '</div>';
+  it.buttons.forEach(b => { const x = document.createElement('button'); x.textContent = b.label; if (b.primary) x.className = 'primary'; x.onclick = () => { const i = sq.indexOf(it); if (i >= 0) sq.splice(i, 1); drawSbar(); if (b.fn) b.fn(); }; bar.append(x); });
+}
+function sbarPush(it) { if (it.key && sq.some(x => x.key === it.key)) return; sq.push(it); drawSbar(); }
+const fadeIn = w => { const f = () => w.classList.add('rdy'); ['dom-ready', 'did-stop-loading', 'did-fail-load'].forEach(ev => w.addEventListener(ev, f)); setTimeout(f, 6000); };
+function saveSession(){ try{ localStorage.setItem('ember.tabs', JSON.stringify(tabs.filter(t=>!t.priv&&t.mode==='web'&&/^https?:/i.test(t.url)).map(t=>t.url).slice(0,8))); }catch(_){} }
+function loadBar(on){ const b=$('#loadbar'); if(!b) return; if(on){ b.style.transition='none'; b.style.width='0'; b.style.opacity='1'; void b.offsetWidth; b.style.transition='width 6s cubic-bezier(.1,.6,.2,1),opacity .3s'; b.style.width='85%'; } else { b.style.transition='width .25s,opacity .4s .25s'; b.style.width='100%'; b.style.opacity='0'; } }
+
+const star = n => '<svg class="star" width="'+n+'" height="'+n+'" viewBox="0 0 150 150" aria-hidden="true"><path d="M75 28 Q55 45 55 70 Q40 65 25 75 Q42 80 53 90 Q45 105 48 122 Q60 110 68 95 Q70 112 75 128 Q80 112 82 95 Q90 110 102 122 Q105 105 97 90 Q108 80 125 75 Q110 65 95 70 Q95 45 75 28Z" fill="url(#lareonStar)"/></svg>';
+const isL = u => { try { const h = new URL(u).hostname; return h === 'lareon.org' || h.endsWith('.lareon.org'); } catch { return false; } };
+const lstar = u => { $('#lstar').style.display = isL(u) ? 'flex' : 'none'; };
+const cur = () => tabs.find(t => t.id === active);
+function norm(v) {
+  v = v.trim(); if (!v) return '';
+  if (/^https?:\/\//i.test(v)) return v;
+  if (/^[^\s]+\.[^\s]{2,}$/.test(v)) return 'https://' + v;
+  return '';
+}
+let hist = []; try { hist = JSON.parse(localStorage.getItem('ember.history') || '[]'); } catch (_) {}
+let dls = []; try { dls = JSON.parse(localStorage.getItem('ember.dls') || '[]'); } catch (_) {}
+const histOff = () => localStorage.getItem('ember.histOff') === '1';
+const saveHist = () => { try { localStorage.setItem('ember.history', JSON.stringify(hist)); } catch (_) {} };
+function recordSearch(t) {
+  if (t.priv || histOff() || !t.q) return;
+  hist = hist.filter(e => e.q.toLowerCase() !== t.q.toLowerCase()); hist.unshift({ q: t.q, t: Date.now() }); hist = hist.slice(0, 200); saveHist();
+}
+function saveDls() { try { localStorage.setItem('ember.dls', JSON.stringify(dls.filter(d => !d.priv).slice(0, 100).map(d => ({ name: d.name, path: d.path, total: d.total, time: d.time, state: (d.state === 'progressing' || d.state === 'paused') ? 'interrupted' : d.state, risky: d.risky, deleted: d.deleted })))); } catch (_) {} }
+function ago(ts) { const x = (Date.now() - ts) / 1000; return x < 60 ? 'just now' : x < 3600 ? Math.floor(x / 60) + ' min ago' : x < 86400 ? Math.floor(x / 3600) + ' h ago' : Math.floor(x / 86400) + ' d ago'; }
+function fmtBytes(b) { if (!b || b < 0) return ''; const u = ['B', 'KB', 'MB', 'GB']; let i = 0; while (b >= 1024 && i < 3) { b /= 1024; i++; } return b.toFixed(i ? 1 : 0) + ' ' + u[i]; }
+function toast(msg) { const el = $('#toast'); if (!el) return; el.textContent = msg; el.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), 2600); }
+function openLib(tab) { let t = tabs.find(x => x.mode === 'lib'); if (!t) { t = { id: ++n, url: '', title: 'Library', wv: null, priv: false, mode: 'lib' }; tabs.push(t); } if (tab) t.libTab = tab; select(t.id); }
+function drawLib(t) {
+  const box = $('#library'), tab = t.libTab || 'history';
+  let h = '<div class="lib"><h1>Library</h1><div class="lib-tabs"><button data-l="history" class="' + (tab === 'history' ? 'on' : '') + '">Search history</button><button data-l="downloads" class="' + (tab === 'downloads' ? 'on' : '') + '">Downloads</button></div>';
+  if (tab === 'history') {
+    h += '<div class="lib-bar"><label class="lib-sw"><input type="checkbox" id="histOn"' + (histOff() ? '' : ' checked') + '> Save search history on this device</label><button class="lib-clear" id="histClear">Clear all</button></div>';
+    h += hist.length ? hist.map((e, i) => '<div class="lib-row"><span class="lib-main" data-q="' + esc(e.q) + '">' + esc(e.q) + '</span><span class="lib-time">' + ago(e.t) + '</span><i data-del="' + i + '" title="Remove">×</i></div>').join('') : '<div class="lib-empty">Nothing saved. Private tabs never save searches.</div>';
+  } else {
+    h += '<div class="lib-bar"><span class="lib-note">Files save to your Downloads folder.</span><button class="lib-clear" id="dlClear">Clear list</button></div>';
+    h += dls.length ? dls.map((d, i) => {
+      const live = d.state === 'progressing' || d.state === 'paused', pct = d.total > 0 ? Math.round(100 * d.received / d.total) : 0;
+      const st = live ? (d.total > 0 ? pct + '%' : 'Downloading…') : d.state === 'completed' ? 'Done' + (d.total ? ' · ' + fmtBytes(d.total) : '') : d.state === 'cancelled' ? (d.deleted ? 'Deleted' : 'Cancelled') : 'Failed';
+      return '<div class="lib-row dl"><div class="lib-main"><b>' + esc(d.name) + (d.priv ? ' <em>private</em>' : '') + '</b><small>' + st + '</small>' + (d.risky && d.state === 'completed' ? '<small class="lib-risk">Program file: open it only if you trust where it came from.</small>' : '') + (live ? '<div class="lib-prog"><i style="width:' + pct + '%"></i></div>' : '') + '</div>' + (live ? '<button class="lib-act" data-cancel="' + i + '">Cancel</button>' : d.state === 'completed' ? (d.risky ? '' : '<button class="lib-act" data-open="' + i + '">Open</button>') + '<button class="lib-act" data-show="' + i + '">Show</button>' : '') + '<i data-deld="' + i + '" title="Remove from list">×</i></div>';
+    }).join('') : '<div class="lib-empty">No downloads yet.</div>';
+  }
+  box.innerHTML = h + '</div>';
+  box.querySelectorAll('[data-l]').forEach(b => b.onclick = () => { t.libTab = b.dataset.l; drawLib(t); });
+  box.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { newTab(); search(b.dataset.q); });
+  box.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { hist.splice(+b.dataset.del, 1); saveHist(); drawLib(t); });
+  const hc = $('#histClear'); if (hc) hc.onclick = () => { hist = []; saveHist(); drawLib(t); };
+  const ho = $('#histOn'); if (ho) ho.onchange = () => { try { localStorage.setItem('ember.histOff', ho.checked ? '0' : '1'); } catch (_) {} };
+  const dc = $('#dlClear'); if (dc) dc.onclick = () => { dls = dls.filter(d => d.state === 'progressing' || d.state === 'paused'); saveDls(); drawLib(t); };
+  box.querySelectorAll('[data-deld]').forEach(b => b.onclick = () => { dls.splice(+b.dataset.deld, 1); saveDls(); drawLib(t); });
+  box.querySelectorAll('[data-cancel]').forEach(b => b.onclick = () => { const d = dls[+b.dataset.cancel]; if (d && window.ember) window.ember.dlCancel(d.id); });
+  box.querySelectorAll('[data-open]').forEach(b => b.onclick = () => { const d = dls[+b.dataset.open]; if (d && window.ember) window.ember.dlOpen(d.path); });
+  box.querySelectorAll('[data-show]').forEach(b => b.onclick = () => { const d = dls[+b.dataset.show]; if (d && window.ember) window.ember.dlShow(d.path); });
+}
+if (window.ember && window.ember.onBlocked) window.ember.onBlocked(b => {
+  const hn = u => { try { return new URL(u).hostname.toLowerCase(); } catch (_) { return ''; } }, bh = hn(b.url);
+  const t = tabs.find(x => x.wv && wid(x) === b.wc && b.wc) || tabs.find(x => x.mode === 'web' && hn(x.url) === bh);
+  if (!t || t.mode !== 'web') return;
+  clearTimeout(t.loadTimer);
+  t.error = { code: b.kind, threat: b.kind === 'threat' ? b.info : null, adult: b.kind === 'adult' ? b.info : null, info: b.info, url: b.url, wc: b.wc };
+  if (/^https?:/i.test(b.url)) { t.url = b.url; if (t.id === active) $('#bar').value = b.url; }
+  showWebError(t); render();
+});
+if (window.ember && window.ember.onDownload) window.ember.onDownload(u => {
+  let d = dls.find(x => x.fresh && x.id === u.id), isNew = false;
+  if (!d) { d = { fresh: true, time: Date.now() }; dls.unshift(d); isNew = true; toast('Downloading ' + u.name); }
+  const was = d.state; Object.assign(d, u);
+  if (isNew && u.risky) sbarPush({ key: 'dl|' + u.id, text: u.name + ' is a program file', sub: 'Programs can harm your computer. Keep it only if you trust the site it came from.', buttons: [
+    { label: 'Delete', primary: true, fn: () => { if (window.ember) window.ember.dlDiscard(d.id, d.path); d.state = 'cancelled'; d.deleted = true; saveDls(); toast('Deleted ' + d.name); const t = cur(); if (t && t.mode === 'lib') drawLib(t); } },
+    { label: 'Keep', fn: () => {} }] });
+  if (u.state === 'completed' && was !== 'completed') toast('Downloaded ' + u.name);
+  saveDls();
+  const t = cur();
+  if (t && t.mode === 'lib' && t.libTab === 'downloads' && (u.state !== was || Date.now() - (drawLib.last || 0) > 500)) { drawLib.last = Date.now(); drawLib(t); }
+});
+if (window.ember && window.ember.onNotice) window.ember.onNotice(m => toast(m));
+if (window.ember && window.ember.onPermission) window.ember.onPermission(p => {
+  const t = tabs.find(x => x.wv && wid(x) === p.wc), m = p.media || [];
+  const what = p.perm === 'media' ? 'use your ' + (m.includes('video') && m.includes('audio') ? 'camera and microphone' : m.includes('video') ? 'camera' : m.includes('audio') ? 'microphone' : 'camera or microphone')
+    : ({ geolocation: 'know your location', notifications: 'show notifications', 'clipboard-read': 'read your clipboard' }[p.perm] || 'use your MIDI devices');
+  sbarPush({ key: 'perm|' + p.id, tab: t ? t.id : null, text: p.host + ' wants to ' + what, sub: 'Allow it only if you trust this site.', buttons: [
+    { label: 'Allow', primary: true, fn: () => window.ember.permAnswer(p.id, true) }, { label: 'Block', fn: () => window.ember.permAnswer(p.id, false) }] });
+});
+const isCertCode = c => { c = Number(c); return c <= -200 && c >= -219; };
+const CERT_INFO = {
+  '-200': ['Name mismatch', 'The certificate was issued for a different site name than the one you opened.'],
+  '-201': ['Expired or not yet valid', 'The certificate has expired or isn’t valid yet. A wrong date on your device can cause this too.'],
+  '-202': ['Untrusted issuer', 'The certificate wasn’t issued by an authority Ember trusts. It may be self-signed or forged.'],
+  '-203': ['Certificate has errors', 'The certificate is malformed or contains errors.'],
+  '-204': ['No revocation info', 'The certificate has no way to check whether it was withdrawn.'],
+  '-205': ['Revocation check failed', 'Ember couldn’t check whether this certificate was withdrawn.'],
+  '-206': ['Certificate revoked', 'The issuer withdrew this certificate. Don’t trust this site.'],
+  '-207': ['Invalid certificate', 'The certificate is not valid.'],
+  '-208': ['Weak signature', 'The certificate is signed with an outdated, breakable algorithm.'],
+  '-210': ['Non-unique name', 'The certificate uses a name that isn’t unique to this site.'],
+  '-211': ['Weak key', 'The certificate’s encryption key is too weak to be safe.'],
+  '-212': ['Name constraint violated', 'The certificate breaks the rules set by its issuer.'],
+  '-213': ['Validity too long', 'The certificate is valid for longer than browsers allow.'],
+  '-214': ['Transparency required', 'The certificate wasn’t publicly logged as required.']
+};
+const fmtDate = x => x ? new Date(x * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+const certRowsHtml = c => '<div class="cert-rows">' + [['Issued to', c.subject], ['Issued by', c.issuer], ['Valid from', fmtDate(c.validStart)], ['Valid until', fmtDate(c.validExpiry)], ['Fingerprint', c.fingerprint]].map(r => '<div><span>' + r[0] + '</span><b>' + esc(r[1] || '—') + '</b></div>').join('') + '</div>';
+const wid = t => { try { return t.wv ? t.wv.getWebContentsId() : 0; } catch (_) { return 0; } };
+function fetchCert(t, url) {
+  let u; try { u = new URL(url); } catch (_) { return; }
+  if (u.protocol !== 'https:' || !window.ember || !window.ember.certInfo) { t.cert = null; t.certHost = ''; t.certPending = false; return; }
+  const host = u.hostname.toLowerCase();
+  // new site: forget the old certificate until the new one arrives. same site: keep what we have so the icon doesn't flicker.
+  if (t.certHost !== host) { t.cert = null; t.certPending = true; }
+  t.certHost = host;
+  window.ember.certInfo(host, wid(t)).then(c => { if (t.certHost === host) { t.cert = c; t.certPending = false; render(); } })
+    .catch(() => { if (t.certHost === host) { t.certPending = false; render(); } });
+}
+function secState(t) {
+  if (!t || t.mode !== 'web') return null;
+  let u; try { u = new URL(t.url); } catch (_) { return null; }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
+  const e = t.error, c = t.cert, https = u.protocol === 'https:';
+  if (e && (e.code === 'adult' || e.code === 'scam' || e.code === 'risk' || e.code === 'insecure')) return null; // blocked before connecting: nothing to grade yet
+  // red: failed certificate, listed threat, or a warning that was clicked through
+  if (e && (isCertCode(e.code) || e.code === 'threat')) return { l: 'bad', title: 'Not secure', why: e.code === 'threat' ? 'This site is on a list of dangerous sites.' : 'Ember couldn’t verify this site’s security certificate.' };
+  if (t.overrode && t.overrode === u.hostname && !(t.overrodeKind === 'cert' && c && !c.bad)) return { l: 'bad', title: 'Not secure', why: 'You continued past a security warning for this site. Anything you send could be read or changed.' };
+  if (https && c && c.bad) return { l: 'bad', title: 'Not secure', why: 'This site’s certificate failed verification and the warning was bypassed. Anything you send could be read or changed.' };
+  // amber: nothing secure was established, or it's only partly secure
+  if (e && !e.soft && !e.http) return { l: 'mid', title: 'Connection failed', why: 'Ember couldn’t connect to this site, so its security couldn’t be checked.' };
+  if (!https) return { l: 'mid', title: 'Not encrypted', why: 'This page was sent without encryption, so anyone on the network could read or change it. Don’t enter passwords or personal details.' };
+  if (t.certPending) return { l: 'mid', title: 'Checking certificate…', why: 'Ember is still reading this site’s security certificate.' };
+  if (c && c.validExpiry && c.validExpiry * 1000 - Date.now() < 14 * 864e5) return { l: 'mid', title: 'Certificate expires soon', why: 'The connection is encrypted and verified, but this site’s certificate runs out within two weeks.' };
+  // green: https, certificate verified, nothing wrong. Lareon sites get their own badge, but only after the same checks.
+  if (isL(t.url)) return { l: 'lareon', title: 'Lareon site', why: 'This is an official Lareon site. Ember verified its certificate and your connection is encrypted.' };
+  return { l: 'ok', title: 'Secure connection', why: 'This site’s identity was verified and your connection to it is encrypted.' };
+}
+function secIcon(l) {
+  if (l === 'lareon') return '<svg width="16" height="16" viewBox="0 0 32 36" aria-hidden="true"><path d="M16 2 29 7v9c0 8.5-5.3 14.6-13 18C8.3 30.6 3 24.5 3 16V7z" fill="url(#ltG)"/><path d="M16 9.5l1.9 4.3 4.6.4-3.5 3 1.1 4.5L16 19.1l-4.1 2.6 1.1-4.5-3.5-3 4.6-.4z" fill="#fff"/></svg>';
+  const sh = l === 'mid' ? '<path d="M8 11V8a4 4 0 0 1 7.6-1.7"/>' : '<path d="M8 11V8a4 4 0 0 1 8 0v3"/>';
+  return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2.5" fill="currentColor" fill-opacity=".18"/>' + sh + (l === 'bad' ? '<path d="M4 4l16 16"/>' : '') + '</svg>';
+}
+function updateSec() {
+  const b = $('#sec'); if (!b) return;
+  const st = secState(cur());
+  const lt = $('#ltrust'); if (lt) lt.style.display = (st && st.l === 'lareon') ? 'flex' : 'none';
+  if (!st) { b.style.display = 'none'; return; }
+  b.style.display = 'flex'; b.className = 'sec ' + st.l; b.innerHTML = secIcon(st.l); b.title = st.title + ' — click for details';
+}
+async function secPanel(open) {
+  const p = $('#secpanel'), t = cur(); if (!p || !t) return;
+  if (!open) { p.style.display = 'none'; if (t.wv && t.mode === 'web' && !t.error) t.wv.style.display = ''; return; }
+  const st = secState(t); if (!st) return;
+  let host = ''; try { host = new URL(t.url).hostname; } catch (_) {}
+  const ts = window.ember && window.ember.threatStatus ? await window.ember.threatStatus() : null, total = ts ? ts.hosts + ts.urls : 0;
+  p.innerHTML = '<div class="sp"><div class="sp-head ' + st.l + '">' + secIcon(st.l) + '<div><h2>' + esc(st.title) + '</h2><p>' + esc(st.why) + '</p></div></div><div class="sp-host">' + esc(host) + '</div>' + (t.cert ? certRowsHtml(t.cert) : '') + '<div class="sp-note">' + (st.l === 'lareon' ? 'Lareon sites get the same certificate checks as every other site. Only the threat lists skip them.' : total ? 'Threat protection is on: ' + total.toLocaleString() + ' known dangerous sites, checked on this device. The addresses you visit aren’t sent to a safety service.' : 'The threat list hasn’t loaded yet. Ember will try again soon.') + '</div><button id="spClose" class="err-primary">Close</button></div>';
+  p.style.display = 'flex'; if (t.wv) t.wv.style.display = 'none';
+  $('#spClose').onclick = () => secPanel(false);
+}
+function showSecScreen(t, box) {
+  const wcid = typeof t.error.wc === 'number' ? t.error.wc : wid(t);
+  const th = t.error.code === 'threat' ? t.error.threat : null, url = t.error.url || t.url;
+  let host = ''; try { host = new URL(url).hostname; } catch (_) {}
+  const k = String(t.error.code), soft = /^(scam|risk|insecure)$/.test(k) ? safetyText(k, t.error.info || {}, url) : null;
+  const ci = CERT_INFO[String(t.error.code)] || ['Certificate problem', 'Ember couldn’t verify this site’s security certificate.'];
+  const phish = th && th.kind === 'phishing';
+  const title = soft ? soft.title : th ? (phish ? 'This looks like a phishing site.' : 'This site is known to be dangerous.') : 'Ember can’t verify this site.';
+  const desc = soft ? soft.desc : th ? (phish ? 'This page is on a list of sites that pretend to be someone else to steal passwords and personal details.' : 'This site is on a list of sites that spread malware. Visiting it could harm your device or steal your data.') : 'Ember stopped before loading this page because its security certificate has a problem. Anything you typed there could be seen or changed by someone else.';
+  const codeTxt = soft ? soft.code : th ? 'THREAT · ' + th.kind.toUpperCase() + ' · listed by ' + th.source : ci[0] + ' · ' + (t.error.desc || '') + ' (code ' + t.error.code + ')';
+  const icon = '<svg class="err-svg" viewBox="0 0 96 96" aria-hidden="true"><defs><linearGradient id="secG" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff7c1f"/><stop offset="1" stop-color="#ff4f9a" stop-opacity="0"/></linearGradient><clipPath id="secC"><path d="M48 10 80 22v24c0 19-13 33-32 40C29 79 16 65 16 46V22z"/></clipPath></defs><path d="M48 10 80 22v24c0 19-13 33-32 40C29 79 16 65 16 46V22z" fill="#2f2b3d"/><g clip-path="url(#secC)"><rect class="err-glow" x="10" y="30" width="76" height="62" fill="url(#secG)"/></g><path d="' + (th ? 'M38 38l20 20M58 38 38 58' : 'M48 34v20M48 63h.01') + '" fill="none" stroke="#ffb347" stroke-width="4" stroke-linecap="round"/></svg>';
+  box.classList.add('bad');
+  box.innerHTML = '<div class="err sec"><div class="error-brand ember-error-brand"><img src="assets/mark.svg"><span>Ember Safety</span></div><div class="err-art">' + icon + '</div><h2>' + esc(title) + '</h2><p>' + esc(desc) + '</p>' + (host ? '<div class="err-url">' + esc(host) + '</div>' : '') + '<div class="err-actions"><button id="secBack" class="err-primary">Back to safety</button>' + (soft && soft.extra ? '<button id="secExtra" class="error-home">' + esc(soft.extra[0]) + '</button>' : '') + '</div><details class="sec-adv"><summary>Advanced</summary><div class="sec-body"><div>' + esc(soft ? soft.adv : th ? 'Ember checks every page against lists of known malware and phishing sites on your device, before anything loads.' : ci[1]) + '</div>' + (th || soft ? '' : '<div id="certRows"></div>') + '<button id="secGo" class="sec-go">Proceed anyway (unsafe)</button></div></details><code id="errCode" title="Click to copy">' + esc(codeTxt) + '</code></div>';
+  box.style.display = 'flex';
+  $('#secBack').onclick = () => leaveToStart(t, box);
+  const ex = $('#secExtra'); if (ex) ex.onclick = () => { t.error = null; box.style.display = 'none'; box.classList.remove('bad'); if (t.wv) t.wv.style.display = ''; soft.extra[1](t); };
+  const go = $('#secGo');
+  go.onclick = async () => {
+    if (!go.dataset.sure) { go.dataset.sure = '1'; go.textContent = 'Click again to confirm'; return; }
+    if (window.ember) { if (soft) await soft.allow(host, wcid); else if (th) await window.ember.threatAllow(host, wcid); else await window.ember.certAllow(host, wid(t)); }
+    if (!soft) { t.overrode = host; t.overrodeKind = th ? 'threat' : 'cert'; } t.error = null; box.style.display = 'none'; box.classList.remove('bad');
+    if (t.wv) { t.wv.style.display = ''; loadSafe(t, url); }
+    render();
+  };
+  const ec = $('#errCode'); ec.onclick = () => { try { navigator.clipboard.writeText(codeTxt + ' · ' + host); } catch (_) {} ec.textContent = 'Copied ✓'; setTimeout(() => { ec.textContent = codeTxt; }, 1200); };
+  if (!th && !soft && window.ember && window.ember.certInfo) window.ember.certInfo(host, wid(t)).then(c => { const el = $('#certRows'); if (c && el) el.innerHTML = certRowsHtml(c); });
+  $('#secBack').focus({ preventScroll: true });
+}
+function showAdultScreen(t, box) {
+  const wcid = typeof t.error.wc === 'number' ? t.error.wc : wid(t);
+  const url = t.error.url || t.url; let host = ''; try { host = new URL(url).hostname; } catch (_) {}
+  const info = t.error.code === 'risk' ? (t.error.info || {}) : null, A = ADULT18[info ? info.cat : 'adult'] || ADULT18.adult;
+  const icon = '<svg class="err-svg" viewBox="0 0 96 96" aria-hidden="true"><defs><linearGradient id="adG" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff7c1f"/><stop offset="1" stop-color="#ff4f9a" stop-opacity="0"/></linearGradient><clipPath id="adC"><circle cx="48" cy="48" r="36"/></clipPath></defs><circle cx="48" cy="48" r="36" fill="#2f2b3d"/><g clip-path="url(#adC)"><rect class="err-glow" x="10" y="30" width="76" height="62" fill="url(#adG)"/></g><text x="48" y="57" text-anchor="middle" font-size="26" font-weight="800" fill="#ffb347" font-family="Inter,system-ui,sans-serif">18+</text></svg>';
+  box.classList.add('bad');
+  box.innerHTML = '<div class="err sec"><div class="error-brand ember-error-brand"><img src="assets/mark.svg"><span>Ember Safety</span></div><div class="err-art">' + icon + '</div><h2>' + esc(A[0]) + '</h2><p>' + esc('Ember thinks this site has ' + A[1] + '. We’d advise you not to go on it, especially if you’re under 18, or on a shared, school or work device.') + '</p>' + (host ? '<div class="err-url">' + esc(host) + '</div>' : '') + '<div class="err-actions"><button id="adBack" class="err-primary">Back to safety</button><button id="adGo" class="error-home">I’m 18 or older — continue</button></div></div>';
+  box.style.display = 'flex';
+  $('#adBack').onclick = () => leaveToStart(t, box);
+  const go = $('#adGo');
+  go.onclick = async () => {
+    if (!go.dataset.sure) { go.dataset.sure = '1'; go.textContent = 'Click again to confirm'; return; }
+    if (window.ember) { if (info && window.ember.scamAllow) await window.ember.scamAllow(host, wcid); else if (window.ember.adultAllow) await window.ember.adultAllow(host, wcid); }
+    t.error = null; box.style.display = 'none'; box.classList.remove('bad');
+    if (t.wv) { t.wv.style.display = ''; loadSafe(t, url); }
+    render();
+  };
+  $('#adBack').focus({ preventScroll: true });
+}
+function leaveToStart(t, box) {
+  t.error = null; clearTimeout(t.errorTimer); clearTimeout(t.loadTimer);
+  if (box) { box.style.display = 'none'; box.classList.remove('bad'); }
+  if (t.q && t.res && t.res.results && t.res.results.length) { t.mode = 'search'; t.title = t.q; t.url = ''; }
+  else { if (t.wv) { t.wv.remove(); t.wv = null; } t.mode = undefined; t.url = ''; t.q = ''; t.res = null; t.title = t.priv ? 'Private' : 'Start'; t.cert = null; t.certHost = ''; t.certPending = false; }
+  select(t.id);
+}
+// What the 18+ screen says for each kind of site
+const ADULT18 = { adult: ['This looks like an adult website.', 'adult (18+) content'], gambling: ['This looks like a gambling website.', 'gambling content'], strangers: ['This site connects you with strangers.', 'random chat with people you don’t know'], shock: ['This looks like a graphic-content website.', 'graphic, violent content'] };
+const WARN_LABEL = { scam: 'Unsafe site', freebies: 'Unsafe site', support: 'Unsafe site', cheats: 'Unsafe site', tracker: 'Unsafe site', gambling: 'Adult (18+)', strangers: 'Adult (18+)', shock: 'Adult (18+)', threat: 'Known dangerous site', adult: 'Adult (18+)' };
+const RISK_TXT = {
+  freebies: ['FREE OFFER', 'Ember thinks this site offers free currency, gift cards or giveaways. Offers like this are commonly used to steal account details.'],
+  support: ['FAKE ALERT', 'Ember thinks this site shows fake virus or security alerts, which are commonly used to trick people into installing software or calling scammers.'],
+  cheats: ['UNSAFE DOWNLOADS', 'Ember thinks this site offers cheats, cracked software or similar downloads, which commonly contain malware or steal account details.'],
+  tracker: ['IP LOGGER', 'Ember thinks this link can record your IP address and approximate location when it’s opened.']
+};
+// Wording for the lookalike, unsafe-site and not-private cases. They share the security screen above.
+function safetyText(k, s, url) {
+  const ask = n => (h, id) => window.ember && window.ember[n] ? window.ember[n](h, id) : 0;
+  if (k === 'insecure') return { title: 'This connection isn’t private.', desc: 'Ember couldn’t find a secure version of this site. Anything you send or receive, such as passwords or card details, could be seen or changed by someone else.', adv: 'Ember upgrades http addresses to https automatically when a site supports it. This one didn’t respond on https.', code: 'NOT ENCRYPTED · plain http', allow: ask('httpAllow'),
+    extra: s.canUpgrade === false ? null : ['Try the secure version', t => { let u; try { u = new URL(url); u.protocol = 'https:'; } catch (_) { return; } loadSafe(t, u.href); render(); }] };
+  if (k === 'scam') { const b = s.brand, chars = s.reason === 'chars' && !b;
+    return { title: chars ? 'This address may be pretending to be another site.' : 'This site may be pretending to be ' + (b || 'another site') + '.', desc: chars ? 'Ember thinks this address uses lookalike characters to imitate another site. Sites like this are used to steal passwords and personal details.' : 'Ember thinks this address is trying to look like ' + (b || 'another site') + '. Sites like this copy trusted ones to steal passwords and personal details.', adv: 'Ember compares every address with the real sites of commonly copied brands, on your device, before anything loads.', code: 'LOOKALIKE · ' + (b || 'CHARACTERS').toUpperCase() + ' · matched by the address', allow: ask('scamAllow'), extra: s.home ? ['Go to the real ' + b, t => openUrl(s.home, t)] : null }; }
+  const r = RISK_TXT[s.cat] || RISK_TXT.freebies;
+  return { title: 'This site looks unsafe.', desc: r[1], adv: 'Ember checks every address for the warning signs of scams and unsafe downloads, on your device, before anything loads.', code: 'UNSAFE · ' + r[0] + ' · matched by the address', allow: ask('scamAllow'), extra: null };
+}
+function mkWv(t) {
+  const w = document.createElement('webview');
+  if (t.priv) w.setAttribute('partition', 'ember-private-' + t.id);
+  w.src = t.url; fadeIn(w);
+  w.addEventListener('did-start-loading', () => {
+    clearTimeout(t.loadTimer);
+    t.loadTimer = setTimeout(() => {
+      if (!t.error && t.wv === w && t.mode === 'web') {
+        t.error = { code: -118, desc: 'The page did not finish loading in time.', soft: true };
+        showWebError(t);
+        render();
+      }
+    }, 20000);
+  });
+  w.addEventListener('did-finish-load', () => {
+    clearTimeout(t.loadTimer);
+    if (t.error && !t.error.soft && !t.error.http) { showWebError(t); return; } // real failure: stay on the error screen
+    if (t.error && t.error.soft) t.error = null; // it was just slow, and it finished
+    showWebError(t);
+  });
+  // 404, 500, etc. load "successfully" as far as Chromium is concerned, so catch them by status code
+  w.addEventListener('did-frame-navigate', e => {
+    if (!e.isMainFrame || /^chrome-error:/i.test(e.url)) return;
+    const s = Number(e.httpResponseCode) || 0;
+    if (s >= 400) {
+      clearTimeout(t.loadTimer);
+      t.error = { code: 'http-' + s, http: true, status: s, text: e.httpStatusText || '' };
+      showWebError(t); render();
+    } else if (t.error && t.error.http) t.error = null;
+  });
+  w.addEventListener('did-fail-load', e => {
+    if (e.errorCode === -3 || !e.isMainFrame) return;
+    clearTimeout(t.loadTimer);
+    if (t.error && /^(adult|threat|scam|risk|insecure)$/.test(t.error.code)) { try { if (new URL(t.error.url).hostname === new URL(e.validatedURL).hostname) { showWebError(t); return; } } catch (_) {} }
+    if (e.errorCode === -20 && window.ember && window.ember.threatCheck) {
+      const fu = e.validatedURL || t.url;
+      window.ember.threatCheck(fu).then(async th => {
+        const sc = (!th && window.ember.scamCheck) ? await window.ember.scamCheck(fu) : null;
+        const ad = (!th && !sc && window.ember.adultCheck) ? await window.ember.adultCheck(fu) : null;
+        t.error = th ? { code: 'threat', threat: th, url: fu } : sc ? { code: sc.kind, info: sc, url: fu } : ad ? { code: 'adult', adult: ad, url: fu } : { code: -20, desc: e.errorDescription, url: fu };
+        if (/^https?:/i.test(fu)) { t.url = fu; if (t.id === active && t.mode === 'web') $('#bar').value = fu; }
+        showWebError(t); render();
+      });
+      return;
+    }
+    t.error = { code:e.errorCode, desc:e.errorDescription || 'The page could not be loaded.', url:e.validatedURL || t.url };
+    if (/^https?:/i.test(t.error.url)) { t.url = t.error.url; if (t.id === active && t.mode === 'web') $('#bar').value = t.url; }
+    showWebError(t);
+    render();
+  });
+  w.addEventListener('did-start-loading', () => { t.loading = true; if (t.id === active) loadBar(true); });
+  w.addEventListener('did-stop-loading', () => { t.loading = false; if (t.id === active) loadBar(false); });
+  w.addEventListener('page-favicon-updated', e => { t.fav = (e.favicons || [])[0] || ''; render(); });
+  w.addEventListener('page-title-updated', e => { t.title = e.title; render(); });
+  const nav = e => { if (/^chrome-error:/i.test(e.url)) return; t.url = e.url; if (t.id === active && t.mode !== 'search') { $('#bar').value = e.url; lstar(e.url); } fetchCert(t, e.url); render(); };
+  w.addEventListener('did-navigate', nav);
+  w.addEventListener('did-navigate-in-page', nav);
+  $('#views').appendChild(w); t.wv = w;
+}
+function newTab(url = '', priv = false) {
+  const t = { id: ++n, url, title: priv ? 'Private' : 'Start', wv: null, priv, mode: url ? 'web' : undefined };
+  if (url) { t.title = 'Loading…'; mkWv(t); }
+  tabs.push(t); select(t.id);
+  if (!url) $('#q').focus();
+}
+function select(id) {
+  active = id; const t = cur(); { const sp = $('#secpanel'); if (sp) sp.style.display = 'none'; }
+  tabs.forEach(x => { if (x.wv) x.wv.style.display = (x.id === id && x.mode !== 'search' && x.mode !== 'lib' && !(x.mode === 'web' && x.error)) ? '' : 'none'; });
+  $('#start').style.display = (!t.wv && t.mode !== 'search' && t.mode !== 'lib') ? 'flex' : 'none';
+  $('#results').style.display = t.mode === 'search' ? 'block' : 'none'; $('#library').style.display = t.mode === 'lib' ? 'block' : 'none'; document.body.classList.toggle('private', !!t.priv);
+  $('#bar').value = t.mode === 'lib' ? 'ember://library' : (t.mode === 'search' ? t.q : t.url); lstar(t.mode === 'search' || t.mode === 'lib' ? '' : t.url); render();
+  if (t.mode === 'search') draw(t);
+  if (t.mode === 'lib') drawLib(t);
+  showWebError(t);
+  loadBar(!!t.loading); drawSbar();
+}
+const errorMessages = {
+  '-105':['That address got lost.','Ember couldn’t find a server for that address. Maybe check the spelling?','DNS / host not found'],
+  '-106':['Ember is offline.','The internet connection seems to have wandered away. Reconnect and Ember will be ready.','Internet disconnected'],
+  '-118':['That took too long.','The site didn’t answer before Ember got tired of waiting.','Request timed out'],
+  '-101':['The connection got interrupted.','The website closed the connection before Ember could finish loading it.','Connection reset'],
+  '-102':['The door is closed.','That website refused Ember’s connection.','Connection refused'],
+  '-103':['Ember couldn’t reach it.','Something stopped Ember from establishing a connection to this website.','Connection failed'],
+  '-107':['Your network moved.','Your connection changed while Ember was loading the page.','Network changed'],
+  '-200':['Ember can’t trust this certificate.','The website’s security certificate could not be verified, so Ember stopped before showing the page.','Certificate error'],
+  '-201':['That certificate has expired.','The website presented an expired security certificate. Ember stopped to keep you safe.','Certificate expired'],
+  '-202':['That certificate was revoked.','The website presented a certificate that is no longer trusted.','Certificate revoked'],
+  '-501':['Ember can’t show this page.','The page was blocked or could not be displayed by the browser.','Blocked by browser']
+};
+const httpErrors = {
+  '400':['That request got garbled.','The website couldn’t understand what Ember asked for.'],
+  '401':['This one needs a sign-in.','The website wants you to log in before it shows this page.'],
+  '403':['The door is locked.','The website understood the request but won’t let you in.'],
+  '404':['Nothing here but ash.','Ember followed the trail, but this page doesn’t exist — or it has moved.'],
+  '405':['That’s not allowed here.','The website doesn’t accept this kind of request.'],
+  '408':['The website got tired of waiting.','The server timed out waiting for the request.'],
+  '410':['Gone for good.','This page was removed on purpose and isn’t coming back.'],
+  '429':['Slow down a little.','The website is getting too many requests and asked Ember to wait.'],
+  '500':['The website stumbled.','Something broke on the server’s end. It isn’t your connection — try again in a moment.'],
+  '502':['Bad gateway.','The website’s servers couldn’t pass Ember a good answer.'],
+  '503':['The website is catching its breath.','The server is down for maintenance or overloaded. Try again soon.'],
+  '504':['The gateway gave up waiting.','The website’s servers took too long to answer.']
+};
+function errorInfo(code, err) {
+  const c = String(code);
+  if (c.startsWith('http-')) {
+    const s = Number(c.slice(5));
+    const i = httpErrors[String(s)] || (s < 500
+      ? ['That page isn’t available.','The website answered with an error ('+s+') instead of the page.']
+      : ['The website hit a problem.','The server had trouble and couldn’t show this page. Try again in a moment.']);
+    return [i[0], i[1], 'HTTP '+s+((err && err.text) ? ' · '+err.text : '')];
+  }
+  return errorMessages[c] || ['Ember hit a roadblock.','Something unexpected stopped this page from loading. You can try again.','Error '+c];
+}
+function lareonBadgeSvg(){ return '<svg class="shield" viewBox="0 0 32 36" aria-hidden="true"><path d="M16 2 29 7v9c0 8.5-5.3 14.6-13 18C8.3 30.6 3 24.5 3 16V7z" fill="rgba(255,122,47,.08)" stroke="#ff7a2f" stroke-width="2.2"/><rect x="10.2" y="16" width="11.6" height="9" rx="2.2" fill="none" stroke="#e84bd8" stroke-width="2"/><path d="M12.8 16v-2.3a3.2 3.2 0 0 1 6.4 0V16" fill="none" stroke="#e84bd8" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="20.5" r="1.2" fill="#ff7a2f"/></svg>'; }
+function coalIconSvg(){ const d='M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z'; return '<svg class="coal-icon" viewBox="0 0 150 150" aria-hidden="true"><defs><clipPath id="coalClip"><path transform="translate(93 90) rotate(9)" d="'+d+'"/></clipPath><linearGradient id="coalL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4c4657"/><stop offset="1" stop-color="#2b2733"/></linearGradient><linearGradient id="coalR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3f3a49"/><stop offset="1" stop-color="#201d28"/></linearGradient><linearGradient id="coalEmber" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff7c1f" stop-opacity=".55"/><stop offset=".5" stop-color="#ff4f9a" stop-opacity="0"/></linearGradient></defs><path transform="translate(57 90) rotate(-9)" d="'+d+'" fill="url(#coalL)"/><path transform="translate(93 90) rotate(9)" d="'+d+'" fill="url(#coalR)"/><g clip-path="url(#coalClip)"><path class="cl-glow" transform="translate(93 90) rotate(9)" d="'+d+'" fill="url(#coalEmber)"/></g><path class="cl-smoke" d="M101 30C96 24 107 20 101 13 98 9 103 6 101 2" fill="none" stroke="#9a92a8" stroke-width="3" stroke-linecap="round" opacity=".5"/></svg>'; }
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function emberOutIcon(){ const d='M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z'; return '<svg class="err-svg" viewBox="0 0 150 150" aria-hidden="true"><defs><linearGradient id="errG" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff7c1f"/><stop offset="1" stop-color="#ff4f9a" stop-opacity="0"/></linearGradient></defs><path transform="translate(57 90) rotate(-9)" d="'+d+'" fill="#2f2b3d"/><path transform="translate(93 90) rotate(9)" d="'+d+'" fill="#2f2b3d"/><path class="err-glow" transform="translate(93 90) rotate(9)" d="'+d+'" fill="url(#errG)"/></svg>'; }
+window.addEventListener('online',()=>{ tabs.forEach(t=>{ if(t.error && (t.error.code===-106||t.error.code===-105||t.error.code===-107) && t.wv){ const u=t.error.url||t.url; t.error=null; if(t.id===active){ $('#webError').style.display='none'; t.wv.style.display=''; } loadSafe(t,u); render(); } }); });
+function showWebError(t) {
+  const box=$('#webError');
+  if (!box || t.id !== active || t.mode !== 'web' || !t.error) {
+    if (box && t.id===active && (!t.error || t.mode !== 'web')) box.style.display='none';
+    if (t && t.wv && t.id===active && t.mode === 'web' && !t.error && $('#secpanel').style.display !== 'flex') t.wv.style.display='';
+    return;
+  }
+  // Electron webviews are composited above ordinary DOM layers, so hide the guest
+  // view while the Ember error surface is visible. This makes the error screen
+  // reliably visible instead of sitting behind the failed page.
+  if (t.wv) t.wv.style.display='none';
+  box.classList.remove('bad');
+  if (t.error.code === 'adult' || (t.error.code === 'risk' && ADULT18[(t.error.info || {}).cat])) { showAdultScreen(t, box); return; }
+  if (/^(scam|risk|insecure)$/.test(t.error.code) || isCertCode(t.error.code) || t.error.code === 'threat') { showSecScreen(t, box); return; }
+  const [baseTitle,baseDesc,detail]=errorInfo(t.error.code, t.error);
+  const lareon=isL(t.url);
+  const svcText=lareon && !(t.error.http && t.error.status<500);
+  const title=svcText ? 'Lareon couldn’t open this page.' : baseTitle;
+  const desc=svcText ? 'The Lareon service is having trouble responding right now. Ember kept you here instead of leaving you with a blank page.' : baseDesc;
+  const badge=lareon ? '<div class="error-brand">'+lareonBadgeSvg()+'<span>Lareon service</span></div>' : '<div class="error-brand ember-error-brand"><img src="assets/mark.svg"><span>Ember</span></div>';
+  let host=''; try{ host=new URL(t.error.url||t.url).host; }catch(_){}
+  const art=lareon?lareonBadgeSvg():emberOutIcon();
+  const net=(t.error.desc&&/^(net::)?ERR_/.test(t.error.desc))?t.error.desc.replace(/^net::/,''):'';
+  const codeTxt=t.error.http?detail:detail+' · '+(net?net+' ':'')+'(code '+t.error.code+')';
+  box.innerHTML='<div class="err">'+badge+'<div class="err-art">'+art+'</div><h2>'+esc(title)+'</h2><p>'+esc(desc)+'</p>'+(host?'<div class="err-url">'+esc(host)+'</div>':'')+'<div class="err-actions"><button id="retryWeb" class="err-primary">Try again</button><button class="error-home" id="errorHome">Back to Ember</button>'+(t.error.http?'<button class="error-home" id="showAnyway">Show page anyway</button>':'')+'</div><code id="errCode" title="Click to copy">'+esc(codeTxt)+'</code></div>';
+  box.style.display='flex';
+  clearTimeout(t.errorTimer);
+  t.errorShownAt=Date.now();
+  const failUrl=t.error.url||t.url;
+  $('#retryWeb').onclick=()=>{ t.error=null; clearTimeout(t.errorTimer); clearTimeout(t.loadTimer); box.style.display='none'; if(t.wv){ t.wv.style.display=''; loadSafe(t, failUrl); } };
+  $('#errorHome').onclick=()=>leaveToStart(t, box);
+  const sa=$('#showAnyway'); if(sa) sa.onclick=()=>{ t.error=null; box.style.display='none'; if(t.wv) t.wv.style.display=''; render(); };
+  $('#retryWeb').focus({preventScroll:true});
+  const ec=$('#errCode'); ec.onclick=()=>{ try{ navigator.clipboard.writeText(codeTxt+(host?' · '+host:'')); }catch(_){} ec.textContent='Copied ✓'; setTimeout(()=>{ ec.textContent=codeTxt; },1200); };
+  clearTimeout(t.errorTimer);
+}
+function closeTab(id) {
+  if (!closing.has(id)) { closing.add(id); const el = document.querySelector('.tab[data-id="'+id+'"]'); if (el) el.classList.add('closing'); setTimeout(() => closeTab(id), el ? 160 : 0); return; }
+  closing.delete(id);
+  const i = tabs.findIndex(t => t.id === id), t = tabs[i];
+  if (!t) return;
+  if (t.url && !t.priv && /^https?:/i.test(t.url)) closed.push(t.url);
+  for (let k = sq.length - 1; k >= 0; k--) if (sq[k].tab === id) sq.splice(k, 1); drawSbar();
+  if (t.wv) t.wv.remove(); tabs.splice(i, 1); if (t.priv && window.ember && window.ember.wipePrivate) window.ember.wipePrivate(t.id);
+  if (!tabs.length) return newTab();
+  if (active === id) select(tabs[Math.max(0, i - 1)].id); else render();
+}
+function go(v) {
+  v = v.trim(); if (!v) return;
+  const u = norm(v);
+  if (!u) return search(v);
+  openUrl(u);
+}
+function search(q) {
+  const t = cur(); t.mode = 'search'; t.q = q; t.url = ''; t.title = q;
+  t.error = null; clearTimeout(t.loadTimer); clearTimeout(t.errorTimer); t.cert = null; t.certHost = ''; t.certPending = false;
+  try { if (t.wv) t.wv.stop(); } catch (_) {}
+  select(t.id); run(t);
+}
+const urlKey = u => { try { const x = new URL(u), keep = []; x.searchParams.forEach((v,k) => { if (!/^(utm_|fbclid|gclid|ref$|ref_|cmpid|mc_)/i.test(k)) keep.push(k+'='+v); }); keep.sort(); return x.hostname.replace(/^www\./,'').toLowerCase() + x.pathname.replace(/\/$/,'') + (keep.length ? '?'+keep.join('&') : ''); } catch { return u; } };
+function addNew(t, items) { const out = []; for (const x of items || []) { const k = urlKey(x.url); if (t.seen.has(k)) continue; t.seen.add(k); out.push(x); } return out; }
+function run(t) { recordSearch(t); t.pages = {}; t.seen = new Set(); t.last = 0; t.notice = ''; return goPage(t, 1); }
+// Each Ember page is a merged pool from all providers. Pages load one after another (1, 2, 3...).
+async function goPage(t, n) {
+  const q = t.q; t.page = n; t.notice = '';
+  if (!t.pages[n]) {
+    t.res = { loading: true }; draw(t);
+    let r; try { r = await window.ember.search.query(q, n); } catch { r = { error: 'unavailable' }; }
+    if (t.q !== q) return;
+    if (r.error && n === 1) { t.res = { results: [], failed: true }; if (t.id === active && t.mode === 'search') draw(t); return; }
+    const fresh = r.error ? [] : addNew(t, r.results);
+    if (fresh.length) t.pages[n] = fresh;
+    else {
+      t.last = n - 1;
+      if (n === 1) t.pages[1] = [];
+      else { t.page = n - 1; t.notice = 'That was the last page Ember could find.'; }
+    }
+  }
+  t.res = { results: t.pages[t.page] || [] };
+  if (t.id === active && t.mode === 'search') { draw(t); $('#results').scrollTop = 0; }
+}
+function pageOffset(t) { let o = 0; for (let k = 1; k < t.page; k++) o += (t.pages[k] || []).length; return o; }
+function renderPager(t) {
+  const f = t.footEl; if (!f) return; f.innerHTML = '';
+  const loaded = Object.keys(t.pages || {}).map(Number), maxLoaded = loaded.length ? Math.max(...loaded) : 1;
+  const cap = t.last ? Math.max(t.last, 1) : Math.min(maxLoaded + 1, 50), cur = t.page;
+  if (t.notice) { const n = document.createElement('div'); n.className = 'pager-note'; n.textContent = t.notice; f.append(n); }
+  if (cap <= 1) { const c = (t.pages[1] || []).length; if (c) { const n = document.createElement('div'); n.className = 'pager-note'; n.textContent = c + ' results'; f.append(n); } return; }
+  const row = document.createElement('div'); row.className = 'pager';
+  const btn = (label, n, nav) => { const b = document.createElement('button'); b.className = 'pg' + (nav ? ' nav' : '') + (!nav && n === cur ? ' on' : ''); b.textContent = label; b.onclick = () => goPage(t, n); return b; };
+  if (cur > 1) row.append(btn('‹ Prev', cur - 1, true));
+  const from = Math.max(1, Math.min(cur - 4, cap - 9)), to = Math.min(cap, from + 9);
+  for (let i = from; i <= to; i++) row.append(btn(String(i), i));
+  if (cur < cap) row.append(btn('Next ›', cur + 1, true));
+  f.append(row);
+}
+function clean(s) { const a = document.createElement('textarea'); a.innerHTML = String(s || '').replace(/<[^>]+>/g, ''); return a.value; }
+function msg(w, text) { const p = document.createElement('p'); p.textContent = text; p.style.color = 'var(--muted)'; w.append(p); }
+function draw(t) {
+  if (t.id !== active || t.mode !== 'search') return;
+  const box = $('#results'); box.innerHTML = '';
+  const page = document.createElement('div'); page.className='search-page'; box.append(page);
+  page.innerHTML = '<div class="search-brand"><img src="assets/mark.svg" alt="Ember"><div><div class="word">ember<span style="color:#ff7c1f">.</span> search</div><div style="font-size:10px;color:#716b7d;margin-top:2px;letter-spacing:.4px">Lareon · behind Ember</div></div></div><form class="searchbox" id="inlineSearch"><input id="inlineQ" autocomplete="off" spellcheck="false"><button aria-label="Search">⌕</button></form><div class="search-tabs"><span class="active">Web</span></div><div class="search-meta">Results for <b class="query"></b></div><div class="search-list"></div>';
+  page.querySelector('.query').textContent=t.q;
+  const iq=page.querySelector('#inlineQ'); iq.value=t.q;
+  page.querySelector('#inlineSearch').onsubmit=e=>{e.preventDefault(); if(iq.value.trim()){t.q=iq.value.trim();run(t);}};
+  const list=page.querySelector('.search-list'); const r=t.res || {loading:true};
+  if(r.loading){list.innerHTML='<div class="search-loading"><div class="spinner"></div><div>Searching the web…</div></div>';return;}
+  if(r.failed){list.innerHTML='<div class="search-empty"><div class="ember-face">'+coalIconSvg()+'</div><h3>Ember lost the trail.</h3><p>The search providers didn’t return anything this time. Your browser is still here — give it another spark.</p><button id="searchRetry" style="margin-top:8px;padding:10px 20px;border-radius:20px;background:linear-gradient(135deg,var(--accent),#e046cf);color:#171520;font-weight:750">Try again</button></div>'; page.querySelector('#searchRetry').onclick=()=>run(t);return;}
+  if(!r.results.length){list.innerHTML='<div class="search-empty"><h3>No results found</h3><p>Try different or fewer search terms.</p></div>';return;}
+  t.listEl = list; const off = pageOffset(t);
+  r.results.forEach((x,i)=>list.append(resultEl(x,off+i)));
+  const foot = document.createElement('div'); foot.className = 'search-foot'; page.append(foot); t.footEl = foot;
+  renderPager(t);
+}
+function resultEl(x, i) {
+  const d=document.createElement('article');
+  const lareon=isL(x.url);
+  d.className='result '+(i===0?'featured ':'')+(lareon?'lareon-result':'');
+  const num=document.createElement('span'); num.className='result-number'; num.textContent='#'+(i+1); d.append(num);
+  const url=document.createElement('div'); url.className='result-url';
+  const ico=document.createElement('span'); ico.className='favicon ltr'; try{ ico.textContent=new URL(x.url).hostname.replace(/^www\./,'')[0].toUpperCase(); }catch(_){ ico.textContent='•'; }
+  const host=document.createElement('span'); try{const U=new URL(x.url);host.textContent=U.hostname.replace(/^www\./,'')+(U.pathname==='/'?'':U.pathname);}catch{host.textContent=x.url;}
+  url.append(ico,host); d.append(url);
+  const a=document.createElement('a'); a.textContent=clean(x.title); a.href='#'; a.onclick=e=>{e.preventDefault();openUrl(x.url)}; d.append(a);
+  const p=document.createElement('p'); p.textContent=clean(x.desc||''); d.append(p);
+  if(x.warn){const w=document.createElement('div');w.className='warn-chip';w.textContent='⚠ '+(WARN_LABEL[x.warn]||'May be unsafe');d.append(w);}
+  if(lareon){const tr=document.createElement('div');tr.className='trust';tr.innerHTML=trustShieldSvg()+'<span><b>Lareon</b> trusted</span>';d.append(tr);}
+  return d;
+}
+function trustShieldSvg(){ return '<svg class="shield" viewBox="0 0 32 36" aria-hidden="true"><path d="M16 2 29 7v9c0 8.5-5.3 14.6-13 18C8.3 30.6 3 24.5 3 16V7z" fill="url(#ltG)"/><path d="M9.5 17.5l4.2 4.2 8.8-9.4" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'; }
+function loadSafe(t, url) { try { const p = t.wv.loadURL(url); if (p && p.catch) p.catch(() => {}); } catch (_) { t.wv.src = url; } }
+function openUrl(url, t = cur()) { t.mode = 'web'; t.url = url; t.title = 'Loading…'; t.error = null; if (t.wv) loadSafe(t, url); else mkWv(t); if (t.id === active) select(t.id); else render(); }
+function render() {
+  const box = $('#tabs'); box.innerHTML = '';
+  tabs.forEach(t => {
+    const b = document.createElement('button');
+    b.className = 'tab' + (t.id === active ? ' on' : ''); if (!t.shown) { b.classList.add('enter'); t.shown = true; }
+    const s = document.createElement('span'); s.textContent = t.title;
+    const x = document.createElement('i'); x.textContent = '×'; x.title = 'Close tab';
+    x.onclick = e => { e.stopPropagation(); closeTab(t.id); };
+    if (t.priv) { const p = document.createElement('em'); p.textContent = '🕶'; b.append(p); } if (isL(t.url)) { const ic = document.createElement('em'); ic.innerHTML = star(14); b.append(ic); } if (t.fav && !isL(t.url)) { const f = document.createElement('img'); f.className = 'tab-fav'; f.src = t.fav; f.onerror = () => f.remove(); b.append(f); } b.dataset.id = t.id; b.append(s, x); b.onclick = () => select(t.id); box.appendChild(b);
+  });
+  saveSession(); updateSec();
+}
+$('#add').onclick = () => newTab();
+$('#addp').onclick = () => newTab('', true);
+$('#signin').onclick = () => newTab('https://lareon.org/mail.html#login');
+$('#bar').addEventListener('keydown', e => { if (e.key === 'Enter') go(e.target.value); });
+$('#bar').addEventListener('focus', e => e.target.select());
+$('#sform').onsubmit = e => { e.preventDefault(); go($('#q').value); $('#q').value = ''; };
+document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
+$('#back').onclick = () => { const t = cur(); if (t.mode !== 'web' || !t.wv) return; if (t.wv.canGoBack()) { t.error = null; select(t.id); t.wv.goBack(); } else if (t.q) { t.error = null; t.mode = 'search'; t.title = t.q; select(t.id); } };
+$('#fwd').onclick = () => { const t = cur(); if (t.wv && t.wv.canGoForward()) { t.error = null; select(t.id); t.wv.goForward(); } };
+$('#reload').onclick = () => { const t = cur(); if (t.mode === 'search') run(t); else if (t.wv) { const u = t.error && t.error.url; t.error = null; select(t.id); if (u) loadSafe(t, u); else t.wv.reload(); } };
+$('#mailbtn').onclick = () => {
+  const p = $('#mail'), open = p.classList.toggle('open');
+  $('#mailbtn').classList.toggle('on', open);
+  if (open && !mailWv) {
+    mailWv = document.createElement('webview');
+    mailWv.src = MAIL; mailWv.setAttribute('partition', 'persist:lareon-mail'); fadeIn(mailWv);
+    mailWv.style.cssText = 'position:relative;inset:auto;flex:1;width:100%;min-height:0';
+    p.insertAdjacentHTML('afterbegin', '<div id="mailhead">' + star(20) + 'lareon<b>.</b> mail</div>');
+    p.appendChild(mailWv);
+  }
+};
+document.addEventListener('keydown', e => {
+  if (!(e.metaKey || e.ctrlKey)) return;
+  if (e.key === 't') { e.preventDefault(); newTab(); }
+  if (e.shiftKey && e.key.toLowerCase() === 'n') { e.preventDefault(); newTab('', true); }
+  if (e.key === 'r') { e.preventDefault(); $('#reload').click(); }
+  if (e.key === 'w') { e.preventDefault(); closeTab(active); }
+  if (e.key === 'l') { e.preventDefault(); $('#bar').focus(); }
+  if (e.key.toLowerCase() === 'b') { e.preventDefault(); if (e.shiftKey) moveDock(); else toggleDock(); }
+});
+
+document.addEventListener('keydown', e => {
+  if (!(e.metaKey || e.ctrlKey)) return;
+  const i = tabs.findIndex(t => t.id === active);
+  if (e.key === 'Tab') { e.preventDefault(); const d = e.shiftKey ? -1 : 1; select(tabs[(i + d + tabs.length) % tabs.length].id); }
+  else if (/^[1-9]$/.test(e.key)) { e.preventDefault(); const t = e.key === '9' ? tabs[tabs.length - 1] : tabs[+e.key - 1]; if (t) select(t.id); }
+  else if (e.shiftKey && e.key.toLowerCase() === 't') { e.preventDefault(); const u = closed.pop(); if (u) newTab(u); }
+  else if (['=','+','-','0'].includes(e.key)) { const t = cur(); if (t && t.wv && t.mode === 'web') { e.preventDefault(); t.zoom = e.key === '0' ? 1 : Math.min(3, Math.max(.5, +((t.zoom || 1) + (e.key === '-' ? -.1 : .1)).toFixed(2))); try { t.wv.setZoomFactor(t.zoom); } catch (_) {} } }
+  else if (e.key === '[') { e.preventDefault(); $('#back').click(); }
+  else if (e.key === ']') { e.preventDefault(); $('#fwd').click(); }
+});
+
+if (window.ember) window.ember.onOpenTab((url, from) => {
+  const src = tabs.find(t => { try { return t.wv && t.wv.getWebContentsId() === from; } catch (_) { return false; } });
+  newTab(url, !!(src && src.priv));
+});
+if (window.ember && window.ember.onShortcut) window.ember.onShortcut(k => document.dispatchEvent(new KeyboardEvent('keydown', { key: k.key, shiftKey: !!k.shift, ctrlKey: true, bubbles: true })));
+$('#top').insertAdjacentHTML('beforeend', '<div id="loadbar"></div>');
+$('#top').insertAdjacentHTML('afterend', '<div id="sbar"></div>');
+// side dock: hide it, or move it to the other side. Remembered between launches.
+const isMac = /Mac/.test(navigator.platform || '');
+const dockState = (() => { try { return JSON.parse(localStorage.getItem('ember.dock')) || {}; } catch (_) { return {}; } })();
+function applyDock() {
+  const c = document.body.classList;
+  c.toggle('mac', isMac); c.toggle('win', !isMac && /Win/.test(navigator.platform || '')); c.toggle('dock-hidden', !!dockState.hidden); c.toggle('dock-right', dockState.side === 'right');
+  const b = $('#dockbtn'), k = isMac ? '⌘B' : 'Ctrl+B', t = dockState.hidden ? 'Show dock' : 'Hide dock';
+  if (b) { b.title = t + ' (' + k + ')'; b.setAttribute('aria-label', t); b.setAttribute('aria-pressed', String(!dockState.hidden)); }
+  try { localStorage.setItem('ember.dock', JSON.stringify(dockState)); } catch (_) {}
+}
+function toggleDock() { dockState.hidden = !dockState.hidden; applyDock(); if (dockState.hidden && !dockState.told) { dockState.told = 1; applyDock(); toast('Dock hidden. Press ' + (isMac ? '⌘B' : 'Ctrl+B') + ' to bring it back.'); } }
+function moveDock() { dockState.side = dockState.side === 'right' ? 'left' : 'right'; dockState.hidden = false; applyDock(); }
+$('#dockbtn').onclick = toggleDock; $('#dockmove').onclick = moveDock; applyDock();
+$('#results').insertAdjacentHTML('afterend', '<div id="library"></div>');
+$('#addp').insertAdjacentHTML('afterend', '<button id="libbtn">Library</button>');
+$('#libbtn').onclick = () => openLib();
+$('#library').insertAdjacentHTML('afterend', '<div id="secpanel"></div>');
+$('#bar').insertAdjacentHTML('beforebegin', '<button id="sec" aria-label="Site security"></button>');
+$('#sec').onclick = () => secPanel($('#secpanel').style.display !== 'flex');
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#secpanel').style.display === 'flex') secPanel(false); });
+$('#bar').insertAdjacentHTML('beforebegin', '<span id="privpill">Private</span>');
+$('#start').insertAdjacentHTML('beforeend', '<div id="privnote"><b>Private tab.</b> Cookies and site data for this tab live in memory and are erased when you close it. Links you open from it stay private, and its searches aren’t saved. Search providers still receive your queries, and the sites you visit can still see your connection.</div>');
+document.body.insertAdjacentHTML('beforeend', '<div id="toast"></div>');
+let saved = []; try { saved = JSON.parse(localStorage.getItem('ember.tabs') || '[]'); } catch (_) {}
+if (saved.length) saved.forEach(u => newTab(u)); else newTab();
+</script>
+</body>
+</html>
