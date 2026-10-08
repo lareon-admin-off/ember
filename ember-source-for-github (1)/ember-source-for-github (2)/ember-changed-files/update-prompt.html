@@ -15,6 +15,7 @@ button.p{background:linear-gradient(135deg,#ffb347,#ff7c1f 60%,#ff5d73);border:0
 <script>
 const q=new URLSearchParams(location.search),$=i=>document.getElementById(i);
 $('m').textContent=q.get('m')||'';$('d').textContent=q.get('d')||'';$('a').textContent=q.get('a')||'OK';$('b').textContent=q.get('b')||'Later';
+window.__init=o=>{$('m').textContent=o.message||'';$('d').textContent=o.detail||'';$('a').textContent=o.a||'OK';$('b').textContent=o.b||'Later';};
 $('a').onclick=()=>window.updatePrompt.choose(0);$('b').onclick=()=>window.updatePrompt.choose(1);
 document.addEventListener('keydown',e=>{if(e.key==='Enter')$('a').click();else if(e.key==='Escape')$('b').click();});
 </script></body></html>

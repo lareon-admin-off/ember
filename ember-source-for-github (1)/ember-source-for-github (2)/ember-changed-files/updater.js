@@ -18,9 +18,13 @@ const box = o => new Promise(resolve => {
   ipcMain.on('upd:choice', onChoice);
   const w = new BrowserWindow({ width: 440, height: 210, frame: false, resizable: false, maximizable: false, minimizable: false, fullscreenable: false, show: false, center: true, alwaysOnTop: true, backgroundColor: '#16131f', title: 'Ember update', icon: path.join(__dirname, 'assets', 'icon.png'), webPreferences: { preload: path.join(__dirname, 'update-preload.js'), sandbox: true, contextIsolation: true, nodeIntegration: false } });
   w.removeMenu();
-  w.once('ready-to-show', () => { w.show(); w.focus(); });
   w.on('closed', () => finish(1));
-  w.loadFile(path.join(__dirname, 'update-prompt.html'), { query: { m: o.message, d: o.detail, a: o.buttons[0], b: o.buttons[1] } }).catch(() => finish(1));
+  w.webContents.once('did-finish-load', () => {
+    const j = JSON.stringify({ message: o.message, detail: o.detail, a: o.buttons[0], b: o.buttons[1] }).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+    const show = () => { if (!w.isDestroyed()) { w.show(); w.focus(); } };
+    w.webContents.executeJavaScript('window.__init(' + j + ')').then(show, show);
+  });
+  w.loadFile(path.join(__dirname, 'update-prompt.html')).catch(() => finish(1));
 });
 
 function init() {

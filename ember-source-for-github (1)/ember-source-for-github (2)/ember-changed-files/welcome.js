@@ -34,7 +34,8 @@ exports.showWelcome = afterClose => {
   wwin.once('ready-to-show', () => wwin.show());
   wwin.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   wwin.webContents.on('will-navigate', e => e.preventDefault());
-  wwin.loadFile(path.join(__dirname, 'welcome-page.html'), { query: { first: first ? '1' : '0' } });
+  wwin.webContents.once('did-finish-load', () => { if (wwin && !wwin.isDestroyed()) wwin.webContents.executeJavaScript('window.__setFirst(' + (first ? 'true' : 'false') + ')').catch(() => {}); });
+  wwin.loadFile(path.join(__dirname, 'welcome-page.html'));
   wwin.on('close', () => { if (wfire) wfire(); });
   wwin.on('closed', () => { wwin = null; });
   if (first) { try { fs.writeFileSync(welcomeFlag(), String(Date.now())); } catch (_) {} }
