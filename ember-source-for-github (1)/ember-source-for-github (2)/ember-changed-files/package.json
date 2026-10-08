@@ -22,6 +22,8 @@
       "main.js",
       "preload.js",
       "setup-preload.js",
+      "update-preload.js",
+      "update-prompt.html",
       "updater.js",
       "welcome-page.html",
       "welcome-preload.js",

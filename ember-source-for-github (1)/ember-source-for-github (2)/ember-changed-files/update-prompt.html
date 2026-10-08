@@ -1,0 +1,20 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'"><title>Ember update</title><style>
+*{box-sizing:border-box;margin:0}html,body{height:100%}
+body{font:14px/1.55 "Segoe UI",system-ui,sans-serif;background:#16131f;color:#f3eef6;border:1px solid #3b3450;display:flex;flex-direction:column;padding:26px 28px 22px;user-select:none;-webkit-app-region:drag;overflow:hidden}
+.top{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+h1{font:700 20px/1.2 "Segoe UI",system-ui,sans-serif;letter-spacing:-.4px}
+p{color:#a69fb5;font-size:13.5px;flex:1}
+.row{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;-webkit-app-region:no-drag}
+button{padding:9px 24px;border-radius:999px;border:1px solid #3b3450;background:none;color:#f3eef6;font:600 14px "Segoe UI",system-ui,sans-serif;cursor:pointer}button:hover{background:#2c2639}
+button.p{background:linear-gradient(135deg,#ffb347,#ff7c1f 60%,#ff5d73);border:0;color:#1d1020;font-weight:700}button.p:hover{filter:brightness(1.08)}
+</style></head><body><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><clipPath id="emc"><path transform="translate(57 90) rotate(-9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z"/></clipPath><linearGradient id="emg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffb347"/><stop offset="1" stop-color="#ff4f9a"/></linearGradient>
+<symbol id="em" viewBox="0 0 150 150"><path transform="translate(57 90) rotate(-9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z" fill="#e046cf"/><path transform="translate(93 90) rotate(9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z" fill="#ff7c1f"/><g clip-path="url(#emc)"><path transform="translate(93 90) rotate(9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z" fill="url(#emg)"/></g></symbol></defs></svg>
+<div class="top"><svg width="44" height="44" viewBox="0 0 150 150" aria-hidden="true"><use href="#em"/></svg><h1 id="m"></h1></div>
+<p id="d"></p>
+<div class="row"><button id="b">Later</button><button class="p" id="a">OK</button></div>
+<script>
+const q=new URLSearchParams(location.search),$=i=>document.getElementById(i);
+$('m').textContent=q.get('m')||'';$('d').textContent=q.get('d')||'';$('a').textContent=q.get('a')||'OK';$('b').textContent=q.get('b')||'Later';
+$('a').onclick=()=>window.updatePrompt.choose(0);$('b').onclick=()=>window.updatePrompt.choose(1);
+document.addEventListener('keydown',e=>{if(e.key==='Enter')$('a').click();else if(e.key==='Escape')$('b').click();});
+</script></body></html>

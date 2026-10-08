@@ -1,6 +1,6 @@
 // Automatic updates from GitHub releases.
 // Windows and Linux download and install updates; macOS (unsigned) shows a notice with a link instead.
-const { app, dialog, shell, BrowserWindow } = require('electron');
+const { app, shell, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -10,7 +10,18 @@ let autoUpdater = null, loadError = '';
 try { autoUpdater = require('electron-updater').autoUpdater; } catch (e) { loadError = String(e && e.message || e); }
 
 const setupDone = () => fs.existsSync(path.join(app.getPath('userData'), 'setup-done'));
-const box = o => { const w = BrowserWindow.getFocusedWindow(); return w ? dialog.showMessageBox(w, o) : dialog.showMessageBox(o); };
+// Ember-styled prompt window; resolves with the index of the button chosen (closing the window counts as the second button)
+const box = o => new Promise(resolve => {
+  let done = false;
+  const finish = n => { if (done) return; done = true; ipcMain.removeListener('upd:choice', onChoice); resolve(n); if (w && !w.isDestroyed()) w.close(); };
+  const onChoice = (_, n) => finish(n === 0 ? 0 : 1);
+  ipcMain.on('upd:choice', onChoice);
+  const w = new BrowserWindow({ width: 440, height: 210, frame: false, resizable: false, maximizable: false, minimizable: false, fullscreenable: false, show: false, center: true, alwaysOnTop: true, backgroundColor: '#16131f', title: 'Ember update', icon: path.join(__dirname, 'assets', 'icon.png'), webPreferences: { preload: path.join(__dirname, 'update-preload.js'), sandbox: true, contextIsolation: true, nodeIntegration: false } });
+  w.removeMenu();
+  w.once('ready-to-show', () => { w.show(); w.focus(); });
+  w.on('closed', () => finish(1));
+  w.loadFile(path.join(__dirname, 'update-prompt.html'), { query: { m: o.message, d: o.detail, a: o.buttons[0], b: o.buttons[1] } }).catch(() => finish(1));
+});
 
 function init() {
   app.whenReady().then(() => log('start: version ' + app.getVersion() + ', packaged ' + app.isPackaged + ', updater ' + (autoUpdater ? 'loaded' : 'NOT loaded: ' + loadError)));
