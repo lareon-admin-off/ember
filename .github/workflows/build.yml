@@ -57,6 +57,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Set version from the release tag
+        shell: bash
+        working-directory: app
+        run: |
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          npm pkg set version="${tag#v}"
       - run: npm install
         working-directory: app
       - run: npx electron-builder ${{ matrix.flag }} --publish never
@@ -68,3 +74,5 @@ jobs:
             app/dist/*.exe
             app/dist/*.dmg
             app/dist/*.AppImage
+            app/dist/latest*.yml
+            app/dist/*.blockmap
