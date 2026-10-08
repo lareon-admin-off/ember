@@ -1,0 +1,6 @@
+{
+  "0.9.6": [
+    "Ember now shows what’s new after it updates, like this window.",
+    "Clicking Restart now in the update window restarts Ember right away."
+  ]
+}

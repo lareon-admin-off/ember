@@ -42,12 +42,12 @@ function init() {
     if (!mac || asked) return;
     asked = true;
     box({ type: 'info', buttons: ['Get the update', 'Later'], defaultId: 0, cancelId: 1, title: 'Ember update', message: 'Ember ' + info.version + ' is available', detail: 'Download the new version from ember.lareon.org.' })
-      .then(r => { if (r.response === 0) shell.openExternal('https://ember.lareon.org'); }).catch(() => {});
+      .then(r => { if (r === 0) shell.openExternal('https://ember.lareon.org'); }).catch(() => {});
   });
   autoUpdater.on('update-downloaded', info => {
     log('update downloaded: ' + info.version);
     box({ type: 'info', buttons: ['Restart now', 'Later'], defaultId: 0, cancelId: 1, title: 'Ember update', message: 'Ember ' + info.version + ' is ready', detail: 'Restart Ember to finish updating. If you choose Later, the update installs the next time you close Ember.' })
-      .then(r => { if (r.response === 0) autoUpdater.quitAndInstall(true, true); }).catch(() => {});
+      .then(r => { if (r === 0) autoUpdater.quitAndInstall(true, true); }).catch(() => {});
   });
   const check = () => { if (setupDone()) autoUpdater.checkForUpdates().catch(e => log('check failed: ' + String(e && e.message || e).split('\n')[0])); else log('skipped check: setup not done'); };
   app.whenReady().then(() => { setTimeout(check, 20000); setTimeout(check, 180000); setInterval(check, 6 * 3600 * 1000); });
