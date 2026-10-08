@@ -44,6 +44,10 @@ ipcMain.on('welcome:start', () => { if (wwin && !wwin.isDestroyed()) { if (wfire
 // F1 reopens the welcome page and guide from anywhere in the browser (once setup is done)
 app.on('web-contents-created', (_, wc) => {
   wc.on('before-input-event', (e, input) => {
+    if (input.type === 'keyDown' && input.key === 'F11' && app.isReady() && (completed || fs.existsSync(flag()))) {
+      const w = BrowserWindow.getFocusedWindow(); // F11 toggles full screen on the browser window
+      if (w && w !== win && w !== wwin) { e.preventDefault(); w.setFullScreen(!w.isFullScreen()); }
+    }
     if (input.type === 'keyDown' && input.key === 'F1' && app.isReady() && (completed || fs.existsSync(flag()))) { e.preventDefault(); exports.showWelcome(); }
   });
 });
