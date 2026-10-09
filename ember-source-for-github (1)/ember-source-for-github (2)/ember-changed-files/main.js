@@ -128,6 +128,7 @@ const permGranted = (wcid, host, perm) => { const pre = akey(wcid, host) + '|' +
 function handlePermission(wc, perm, cb, details) {
   if (PERM_OK.has(perm)) return cb(true);
   if (!PERM_ASK.has(perm)) return cb(false);
+  if (prefs.calm && (perm === 'notifications' || perm === 'geolocation')) return cb(false);
   const host = hostOf((details && details.requestingUrl) || (wc && wc.getURL()) || '');
   const media = perm === 'media' ? ((details && details.mediaTypes) || []).slice().sort() : [];
   const key = akey(wc && wc.id, host) + '|' + perm + (media.length ? ':' + media.join('+') : '');
@@ -148,6 +149,25 @@ async function httpsWorks(h) {
   return ok;
 }
 
+// ---- 1.0 preferences pushed from the Ember window ----
+const prefs = { cleanLinks: true, calm: false, focusUntil: 0, focusSites: [] };
+ipcMain.on('prefs:set', (_, o) => {
+  if (!o || typeof o !== 'object') return;
+  if ('cleanLinks' in o) prefs.cleanLinks = !!o.cleanLinks;
+  if ('calm' in o) prefs.calm = !!o.calm;
+  if ('focusUntil' in o) prefs.focusUntil = Number(o.focusUntil) || 0;
+  if (Array.isArray(o.focusSites)) prefs.focusSites = o.focusSites.map(x => String(x).toLowerCase().replace(/^www\./, '')).filter(Boolean).slice(0, 100);
+});
+const TRACK = /^(utm_[a-z]+|fbclid|gclid|dclid|msclkid|yclid|igshid|mc_eid|mc_cid|_hsenc|_hsmi|mkt_tok|vero_id|twclid|ttclid|li_fat_id|oly_enc_id|oly_anon_id|spm|ref_src)$/i;
+function cleanUrl(u) {
+  try {
+    const x = new URL(u); if (!x.search || isLocalHost(x.hostname)) return null;
+    let hit = false; for (const k of [...x.searchParams.keys()]) if (TRACK.test(k)) { x.searchParams.delete(k); hit = true; }
+    return hit ? x.href : null;
+  } catch (_) { return null; }
+}
+const focusBlocked = h => { if (Date.now() >= prefs.focusUntil || !prefs.focusSites.length) return false; h = String(h).replace(/^www\./, ''); return prefs.focusSites.some(s => h === s || h.endsWith('.' + s)); };
+
 function hookSecurity(ses) {
   if (secSeen.has(ses)) return; secSeen.add(ses);
   ses.setCertificateVerifyProc((req, cb) => {
@@ -163,6 +183,8 @@ function hookSecurity(ses) {
   ses.webRequest.onBeforeRequest({ urls: ['http://*/*', 'https://*/*'] }, (d, cb) => {
     if (d.resourceType === 'mainFrame') {
       const h = hostOf(d.url), wcId = d.webContentsId || 0;
+      if (focusBlocked(h)) { try { if (win && !win.isDestroyed()) win.webContents.send('focus:blocked', { wc: wcId, host: h, until: prefs.focusUntil }); } catch (_) {} return cb({ cancel: true }); }
+      if (prefs.cleanLinks) { const cl = cleanUrl(d.url); if (cl) return cb({ redirectURL: cl }); }
       // tell the Ember window right away, so it shows the warning screen no matter which error code Chromium reports for the cancelled load
       const block = (kind, info) => { try { if (win && !win.isDestroyed()) win.webContents.send('nav:blocked', { wc: wcId, url: d.url, kind, info }); } catch (_) {} return cb({ cancel: true }); };
       const th = checkThreat(d.url); if (th && !threatAllow.has(akey(wcId, h))) return block('threat', th);
@@ -203,7 +225,9 @@ function hookDownloads(ses, priv) {
     let target = path.join(dir, fn), k = 1;
     while (fs.existsSync(target)) target = path.join(dir, base + ' (' + (k++) + ')' + ext);
     item.setSavePath(target); dlItems.set(id, item); dlPaths.add(target); const risky = isRiskyFile(target);
-    const send = state => { if (win && !win.isDestroyed()) win.webContents.send('dl:update', { id, name: path.basename(target), path: target, received: item.getReceivedBytes(), total: item.getTotalBytes(), state, priv, risky }); };
+    const src = hostOf(item.getURL()), parts = fn.toLowerCase().split('.').slice(1), dbl = parts.length >= 2 && isRiskyFile('x.' + parts[parts.length - 1]) && /^(pdf|docx?|xlsx?|pptx?|jpe?g|png|gif|txt|mp[34]|zip|rtf)$/.test(parts[parts.length - 2]);
+    const warn = dbl ? 'This file pretends to be a ' + parts[parts.length - 2].toUpperCase() + ' but is really a program. That is a common trick.' : '';
+    const send = state => { if (win && !win.isDestroyed()) win.webContents.send('dl:update', { id, name: path.basename(target), path: target, received: item.getReceivedBytes(), total: item.getTotalBytes(), state, priv, risky, src, warn }); };
     send('progressing');
     item.on('updated', (_, st) => send(st === 'interrupted' ? 'interrupted' : (item.isPaused() ? 'paused' : 'progressing')));
     item.once('done', (_, st) => { dlItems.delete(id); send(st); });
@@ -464,4 +488,4 @@ ipcMain.handle('search:query', async (_, q, pageNo) => {
   });
   return results.length ? {results, page} : {error:'unavailable', page};
 });
-
+require('./features-main')({ app, ipcMain, session, dialog: require('electron').dialog, setup, hostOf, permDecided, getWin: () => win });

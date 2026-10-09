@@ -9,14 +9,31 @@ li{position:relative;padding:12px 14px 12px 40px;margin-bottom:10px;border-radiu
 li::before{content:"";position:absolute;left:16px;top:19px;width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,#ffb347,#ff7c1f 60%,#ff5d73)}
 .row{display:flex;justify-content:flex-end;margin-top:14px;-webkit-app-region:no-drag}
 button{padding:10px 30px;border-radius:999px;border:0;background:linear-gradient(135deg,#ffb347,#ff7c1f 60%,#ff5d73);color:#1d1020;font:700 14px "Segoe UI",system-ui,sans-serif;cursor:pointer}button:hover{filter:brightness(1.08)}
+
+body.major{padding:0;background:radial-gradient(520px 320px at 50% -6%,rgba(255,124,31,.30),transparent 70%),radial-gradient(520px 360px at 100% 105%,rgba(224,70,207,.22),transparent 70%),#120f1a;align-items:stretch}
+.hero{display:none}
+body.major .hero{display:block;text-align:center;padding:38px 34px 6px}
+body.major .top{display:none}
+.hero svg{filter:drop-shadow(0 10px 30px rgba(255,100,60,.55));animation:fl 3.2s ease-in-out infinite}
+@keyframes fl{50%{transform:translateY(-6px)}}
+.hero .eyebrow{margin-top:14px}
+.hero h2{font:800 64px/1 "Segoe UI",system-ui,sans-serif;letter-spacing:-3px;margin:6px 0 10px;background:linear-gradient(90deg,#ffb347,#ff7c1f 40%,#e046cf 85%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:#cfc8dc;font-size:15.5px;max-width:440px;margin:0 auto}
+body.major ul{margin:22px 34px 0;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start}
+body.major li{margin:0;animation:up .6s cubic-bezier(.2,.7,.2,1) both}
+body.major li:first-child{grid-column:1/-1;background:linear-gradient(135deg,rgba(255,124,31,.16),rgba(224,70,207,.14));border-color:#5a3a55;color:#f3eef6;font-size:15px}
+@keyframes up{from{opacity:0;transform:translateY(12px)}}
+body.major .row{padding:0 34px 26px;justify-content:center}
+body.major button{padding:13px 44px;font-size:15px;box-shadow:0 14px 34px -12px rgba(255,100,60,.8)}
 </style></head><body><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><clipPath id="emc"><path transform="translate(57 90) rotate(-9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z"/></clipPath><linearGradient id="emg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffb347"/><stop offset="1" stop-color="#ff4f9a"/></linearGradient>
 <symbol id="em" viewBox="0 0 150 150"><path transform="translate(57 90) rotate(-9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z" fill="#e046cf"/><path transform="translate(93 90) rotate(9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z" fill="#ff7c1f"/><g clip-path="url(#emc)"><path transform="translate(93 90) rotate(9)" d="M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z" fill="url(#emg)"/></g></symbol></defs></svg>
+<div class="hero"><svg width="84" height="84" viewBox="0 0 150 150" aria-hidden="true"><use href="#em"/></svg><div class="eyebrow">The wait is over</div><h2 id="hv">1.0</h2><p>Ember 1.0 is here. A calmer, safer browser with your Lareon account built in.</p></div>
 <div class="top"><svg width="52" height="52" viewBox="0 0 150 150" aria-hidden="true"><use href="#em"/></svg><div><div class="eyebrow">What’s new</div><h1 id="v">Ember updated</h1></div></div>
 <ul id="n"></ul>
 <div class="row"><button id="ok">Got it</button></div>
 <script>
 const $=i=>document.getElementById(i);
-window.__init=o=>{$('v').textContent='Ember '+o.version;const l=$('n');l.textContent='';(o.notes||[]).forEach(t=>{const e=document.createElement('li');e.textContent=t;l.appendChild(e);});};
+window.__init=o=>{$('v').textContent='Ember '+o.version;if(o.major){document.body.classList.add('major');$('hv').textContent=o.version.replace(/\.0\.0$/,'.0');$('ok').textContent='Start browsing';}const l=$('n');l.textContent='';(o.notes||[]).forEach(t=>{const e=document.createElement('li');e.textContent=t;e.style.animationDelay=(l.children.length*70+150)+'ms';l.appendChild(e);});};
 $('ok').onclick=()=>window.whatsNew.close();
 document.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key==='Escape')$('ok').click();});
 </script></body></html>

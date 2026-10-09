@@ -1,4 +1,14 @@
 {
+  "1.0.0": [
+    "Ember Sync: sign in with your Lareon account in Settings and your bookmarks, pinned sites and preferences follow you to every device.",
+    "Ember now opens Fledge, Lareon’s email, from the sidebar.",
+    "Pin tabs, snooze them for later, or make them temporary. Right-click a tab.",
+    "A plain-English site check on the lock: what to watch for, plus Forget this site.",
+    "Safer downloads: warnings for files pretending to be something else.",
+    "Calm mode, focus sessions, reader view and clean links.",
+    "Settings (Ctrl+,), a bookmarks bar, and bookmark import from Chrome, Edge or Brave.",
+    "Type maths or conversions like 18% of 240 or 5 miles to km in the address bar."
+  ],
   "0.9.6": [
     "Ember now shows what’s new after it updates, like this window.",
     "Clicking Restart now in the update window restarts Ember right away."

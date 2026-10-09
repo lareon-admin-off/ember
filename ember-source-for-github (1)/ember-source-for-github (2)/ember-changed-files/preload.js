@@ -23,5 +23,17 @@ contextBridge.exposeInMainWorld('ember', {
   httpAllow: (h, id) => ipcRenderer.invoke('http:allow', h, id),
   adultCheck: u => ipcRenderer.invoke('adult:check', u),
   adultAllow: (h, id) => ipcRenderer.invoke('adult:allow', h, id),
+  prefsSet: o => ipcRenderer.send('prefs:set', o),
+  onFocusBlocked: cb => ipcRenderer.on('focus:blocked', (_, b) => cb(b)),
+  settingsGet: () => ipcRenderer.invoke('settings:get'),
+  pickFolder: () => ipcRenderer.invoke('settings:folder'),
+  forgetSite: h => ipcRenderer.invoke('site:forget', h),
+  importBrowser: () => ipcRenderer.invoke('bm:import-browser'),
+  acctState: () => ipcRenderer.invoke('acct:state'),
+  acctLogin: (u, p) => ipcRenderer.invoke('acct:login', u, p),
+  acctCode: (u, c) => ipcRenderer.invoke('acct:code', u, c),
+  acctLogout: () => ipcRenderer.invoke('acct:logout'),
+  syncPull: () => ipcRenderer.invoke('sync:pull'),
+  syncPush: (d, b) => ipcRenderer.invoke('sync:push', d, b),
   search: { query: (q, page) => ipcRenderer.invoke('search:query', q, page) }
 });

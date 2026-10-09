@@ -301,12 +301,12 @@ body.win:not(.dock-right) #top{padding-right:146px} /* room for the Windows wind
           <p>Fast, clean, and built around Lareon.</p>
           <form id="sform"><input id="q" placeholder="Search Ember or type an address" autocomplete="off" spellcheck="false"></form>
           <div class="links">
-            <button class="primary" data-go="https://lareon.org/mail.html">Open Lareon Mail</button>
+            <button class="primary" data-go="https://mail.lareon.org/">Open Fledge</button>
             <button data-go="https://lareon.org">lareon.org</button>
             <button data-go="https://lareon.org/verify">Verify citizenship</button>
           </div>
           <div class="motto">Find your way. Leave no trace.</div>
-          <div class="band"><strong>Lareon</strong> · Ember &amp; Lareon Mail · <strong>Nation of Larsonia</strong></div>
+          <div class="band"><strong>Lareon</strong> · Ember &amp; Fledge · <strong>Nation of Larsonia</strong></div>
         </div>
       </div>
       <aside id="mail"></aside>
@@ -315,7 +315,7 @@ body.win:not(.dock-right) #top{padding-right:146px} /* room for the Windows wind
 </div>
 <script>
 const $ = s => document.querySelector(s);
-const MAIL = 'https://lareon.org/mail.html';
+const MAIL = 'https://mail.lareon.org/';
 let tabs = [], active = null, n = 0, mailWv = null;
 const closed = [], closing = new Set();
 const sq = [];
@@ -351,7 +351,7 @@ function recordSearch(t) {
   if (t.priv || histOff() || !t.q) return;
   hist = hist.filter(e => e.q.toLowerCase() !== t.q.toLowerCase()); hist.unshift({ q: t.q, t: Date.now() }); hist = hist.slice(0, 200); saveHist();
 }
-function saveDls() { try { localStorage.setItem('ember.dls', JSON.stringify(dls.filter(d => !d.priv).slice(0, 100).map(d => ({ name: d.name, path: d.path, total: d.total, time: d.time, state: (d.state === 'progressing' || d.state === 'paused') ? 'interrupted' : d.state, risky: d.risky, deleted: d.deleted })))); } catch (_) {} }
+function saveDls() { try { localStorage.setItem('ember.dls', JSON.stringify(dls.filter(d => !d.priv).slice(0, 100).map(d => ({ name: d.name, path: d.path, total: d.total, time: d.time, state: (d.state === 'progressing' || d.state === 'paused') ? 'interrupted' : d.state, risky: d.risky, deleted: d.deleted, src: d.src, warn: d.warn })))); } catch (_) {} }
 function ago(ts) { const x = (Date.now() - ts) / 1000; return x < 60 ? 'just now' : x < 3600 ? Math.floor(x / 60) + ' min ago' : x < 86400 ? Math.floor(x / 3600) + ' h ago' : Math.floor(x / 86400) + ' d ago'; }
 function fmtBytes(b) { if (!b || b < 0) return ''; const u = ['B', 'KB', 'MB', 'GB']; let i = 0; while (b >= 1024 && i < 3) { b /= 1024; i++; } return b.toFixed(i ? 1 : 0) + ' ' + u[i]; }
 function toast(msg) { const el = $('#toast'); if (!el) return; el.textContent = msg; el.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), 2600); }
@@ -367,7 +367,7 @@ function drawLib(t) {
     h += dls.length ? dls.map((d, i) => {
       const live = d.state === 'progressing' || d.state === 'paused', pct = d.total > 0 ? Math.round(100 * d.received / d.total) : 0;
       const st = live ? (d.total > 0 ? pct + '%' : 'Downloading…') : d.state === 'completed' ? 'Done' + (d.total ? ' · ' + fmtBytes(d.total) : '') : d.state === 'cancelled' ? (d.deleted ? 'Deleted' : 'Cancelled') : 'Failed';
-      return '<div class="lib-row dl"><div class="lib-main"><b>' + esc(d.name) + (d.priv ? ' <em>private</em>' : '') + '</b><small>' + st + '</small>' + (d.risky && d.state === 'completed' ? '<small class="lib-risk">Program file: open it only if you trust where it came from.</small>' : '') + (live ? '<div class="lib-prog"><i style="width:' + pct + '%"></i></div>' : '') + '</div>' + (live ? '<button class="lib-act" data-cancel="' + i + '">Cancel</button>' : d.state === 'completed' ? (d.risky ? '' : '<button class="lib-act" data-open="' + i + '">Open</button>') + '<button class="lib-act" data-show="' + i + '">Show</button>' : '') + '<i data-deld="' + i + '" title="Remove from list">×</i></div>';
+      return '<div class="lib-row dl"><div class="lib-main"><b>' + esc(d.name) + (d.priv ? ' <em>private</em>' : '') + '</b><small>' + st + '</small>' + (d.src ? '<small>From ' + esc(d.src) + '</small>' : '') + (d.warn ? '<small class="lib-risk">⚠ ' + esc(d.warn) + '</small>' : '') + (d.risky && d.state === 'completed' ? '<small class="lib-risk">Program file: open it only if you trust where it came from.</small>' : '') + (live ? '<div class="lib-prog"><i style="width:' + pct + '%"></i></div>' : '') + '</div>' + (live ? '<button class="lib-act" data-cancel="' + i + '">Cancel</button>' : d.state === 'completed' ? (d.risky ? '' : '<button class="lib-act" data-open="' + i + '">Open</button>') + '<button class="lib-act" data-show="' + i + '">Show</button>' : '') + '<i data-deld="' + i + '" title="Remove from list">×</i></div>';
     }).join('') : '<div class="lib-empty">No downloads yet.</div>';
   }
   box.innerHTML = h + '</div>';
@@ -395,7 +395,7 @@ if (window.ember && window.ember.onDownload) window.ember.onDownload(u => {
   let d = dls.find(x => x.fresh && x.id === u.id), isNew = false;
   if (!d) { d = { fresh: true, time: Date.now() }; dls.unshift(d); isNew = true; toast('Downloading ' + u.name); }
   const was = d.state; Object.assign(d, u);
-  if (isNew && u.risky) sbarPush({ key: 'dl|' + u.id, text: u.name + ' is a program file', sub: 'Programs can harm your computer. Keep it only if you trust the site it came from.', buttons: [
+  if (isNew && u.risky) sbarPush({ key: 'dl|' + u.id, text: u.name + (u.warn ? ' looks fake' : ' is a program file'), sub: (u.warn ? u.warn + ' ' : '') + 'Programs can harm your computer. Keep it only if you trust ' + (u.src || 'the site it came from') + '.', buttons: [
     { label: 'Delete', primary: true, fn: () => { if (window.ember) window.ember.dlDiscard(d.id, d.path); d.state = 'cancelled'; d.deleted = true; saveDls(); toast('Deleted ' + d.name); const t = cur(); if (t && t.mode === 'lib') drawLib(t); } },
     { label: 'Keep', fn: () => {} }] });
   if (u.state === 'completed' && was !== 'completed') toast('Downloaded ' + u.name);
@@ -448,17 +448,17 @@ function secState(t) {
   const e = t.error, c = t.cert, https = u.protocol === 'https:';
   if (e && (e.code === 'adult' || e.code === 'scam' || e.code === 'risk' || e.code === 'insecure')) return null; // blocked before connecting: nothing to grade yet
   // red: failed certificate, listed threat, or a warning that was clicked through
-  if (e && (isCertCode(e.code) || e.code === 'threat')) return { l: 'bad', title: 'Not secure', why: e.code === 'threat' ? 'This site is on a list of dangerous sites.' : 'Ember couldn’t verify this site’s security certificate.' };
-  if (t.overrode && t.overrode === u.hostname && !(t.overrodeKind === 'cert' && c && !c.bad)) return { l: 'bad', title: 'Not secure', why: 'You continued past a security warning for this site. Anything you send could be read or changed.' };
-  if (https && c && c.bad) return { l: 'bad', title: 'Not secure', why: 'This site’s certificate failed verification and the warning was bypassed. Anything you send could be read or changed.' };
+  if (e && (isCertCode(e.code) || e.code === 'threat')) return { l: 'bad', title: 'Not safe', why: e.code === 'threat' ? 'This site is on a list of dangerous sites.' : 'Ember couldn’t confirm this site is who it says it is.' };
+  if (t.overrode && t.overrode === u.hostname && !(t.overrodeKind === 'cert' && c && !c.bad)) return { l: 'bad', title: 'Not safe', why: 'You went past a warning for this site, so anything you type here could be seen by others.' };
+  if (https && c && c.bad) return { l: 'bad', title: 'Not safe', why: 'This site could not prove who it is, so anything you type here could be seen by others.' };
   // amber: nothing secure was established, or it's only partly secure
-  if (e && !e.soft && !e.http) return { l: 'mid', title: 'Connection failed', why: 'Ember couldn’t connect to this site, so its security couldn’t be checked.' };
-  if (!https) return { l: 'mid', title: 'Not encrypted', why: 'This page was sent without encryption, so anyone on the network could read or change it. Don’t enter passwords or personal details.' };
-  if (t.certPending) return { l: 'mid', title: 'Checking certificate…', why: 'Ember is still reading this site’s security certificate.' };
-  if (c && c.validExpiry && c.validExpiry * 1000 - Date.now() < 14 * 864e5) return { l: 'mid', title: 'Certificate expires soon', why: 'The connection is encrypted and verified, but this site’s certificate runs out within two weeks.' };
+  if (e && !e.soft && !e.http) return { l: 'mid', title: 'Couldn’t check this site', why: 'Ember couldn’t reach this site, so it couldn’t check it.' };
+  if (!https) return { l: 'mid', title: 'Be careful here', why: 'This page isn’t private, so others on your network could see it. Don’t type passwords or personal details.' };
+  if (t.certPending) return { l: 'mid', title: 'Checking this site…', why: 'Ember is still checking this site.' };
+  if (c && c.validExpiry && c.validExpiry * 1000 - Date.now() < 14 * 864e5) return { l: 'mid', title: 'Be careful here', why: 'Your connection is private, but this site’s security proof runs out soon. It’s probably fine.' };
   // green: https, certificate verified, nothing wrong. Lareon sites get their own badge, but only after the same checks.
-  if (isL(t.url)) return { l: 'lareon', title: 'Lareon site', why: 'This is an official Lareon site. Ember verified its certificate and your connection is encrypted.' };
-  return { l: 'ok', title: 'Secure connection', why: 'This site’s identity was verified and your connection to it is encrypted.' };
+  if (isL(t.url)) return { l: 'lareon', title: 'Lareon site', why: 'This is an official Lareon site and your connection is private.' };
+  return { l: 'ok', title: 'Safe connection', why: 'This site is who it says it is, and your connection to it is private.' };
 }
 function secIcon(l) {
   if (l === 'lareon') return '<svg width="16" height="16" viewBox="0 0 32 36" aria-hidden="true"><path d="M16 2 29 7v9c0 8.5-5.3 14.6-13 18C8.3 30.6 3 24.5 3 16V7z" fill="url(#ltG)"/><path d="M16 9.5l1.9 4.3 4.6.4-3.5 3 1.1 4.5L16 19.1l-4.1 2.6 1.1-4.5-3.5-3 4.6-.4z" fill="#fff"/></svg>';
@@ -821,7 +821,7 @@ function render() {
 }
 $('#add').onclick = () => newTab();
 $('#addp').onclick = () => newTab('', true);
-$('#signin').onclick = () => newTab('https://lareon.org/mail.html#login');
+$('#signin').onclick = () => newTab('https://lareon.org/account');
 $('#bar').addEventListener('keydown', e => { if (e.key === 'Enter') go(e.target.value); });
 $('#bar').addEventListener('focus', e => e.target.select());
 $('#sform').onsubmit = e => { e.preventDefault(); go($('#q').value); $('#q').value = ''; };
@@ -1113,5 +1113,6 @@ if (saved.length) saved.forEach(u => newTab(u)); else newTab();
   document.addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'a') { e.preventDefault(); openTs(); } });
 })();
 </script>
+<script src="features.js"></script>
 </body>
 </html>

@@ -9,8 +9,9 @@ const stateFile = () => path.join(dataDir(), 'last-version');
 exports.markCurrent = () => { try { fs.writeFileSync(stateFile(), app.getVersion()); } catch (_) {} };
 
 function show(version, notes) {
+  const major = /^\d+\.0\.0$/.test(version);
   const w = new BrowserWindow({
-    width: 500, height: 490, frame: false, resizable: false, maximizable: false, minimizable: false, fullscreenable: false,
+    width: major ? 640 : 500, height: major ? 720 : 490, frame: false, resizable: false, maximizable: false, minimizable: false, fullscreenable: false,
     show: false, center: true, backgroundColor: '#16131f', title: "What's new in Ember", icon: path.join(__dirname, 'assets', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'whatsnew-preload.js'), sandbox: true, contextIsolation: true, nodeIntegration: false }
   });
@@ -18,7 +19,7 @@ function show(version, notes) {
   w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   w.webContents.on('will-navigate', e => e.preventDefault());
   w.webContents.once('did-finish-load', () => {
-    const j = JSON.stringify({ version, notes }).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+    const j = JSON.stringify({ version, notes, major }).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
     const go = () => { if (!w.isDestroyed()) { w.show(); w.focus(); } };
     w.webContents.executeJavaScript('window.__init(' + j + ')').then(go, go);
   });

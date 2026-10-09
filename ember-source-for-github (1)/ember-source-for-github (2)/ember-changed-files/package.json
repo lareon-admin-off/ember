@@ -1,6 +1,6 @@
 {
   "name": "ember",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "description": "Ember \u2014 a browser by Lareon",
   "author": "Lareon",
   "main": "main.js",
@@ -21,6 +21,9 @@
     "files": [
       "main.js",
       "preload.js",
+      "features.js",
+      "features-main.js",
+      "sync-main.js",
       "setup-preload.js",
       "whatsnew.json",
       "whatsnew.html",
