@@ -9,7 +9,7 @@ const stateFile = () => path.join(dataDir(), 'last-version');
 exports.markCurrent = () => { try { fs.writeFileSync(stateFile(), app.getVersion()); } catch (_) {} };
 
 function show(version, notes) {
-  const major = /^\d+\.0\.0$/.test(version);
+  const major = /^\d+\.0\.0$/.test(version) || version === '1.0.1'; // 1.0.1 is the real launch release of 1.0
   const w = new BrowserWindow({
     width: major ? 640 : 500, height: major ? 720 : 490, frame: false, resizable: false, maximizable: false, minimizable: false, fullscreenable: false,
     show: false, center: true, backgroundColor: '#16131f', title: "What's new in Ember", icon: path.join(__dirname, 'assets', 'icon.png'),

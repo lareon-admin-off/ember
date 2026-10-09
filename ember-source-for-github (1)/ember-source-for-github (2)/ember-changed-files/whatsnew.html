@@ -33,7 +33,7 @@ body.major button{padding:13px 44px;font-size:15px;box-shadow:0 14px 34px -12px 
 <div class="row"><button id="ok">Got it</button></div>
 <script>
 const $=i=>document.getElementById(i);
-window.__init=o=>{$('v').textContent='Ember '+o.version;if(o.major){document.body.classList.add('major');$('hv').textContent=o.version.replace(/\.0\.0$/,'.0');$('ok').textContent='Start browsing';}const l=$('n');l.textContent='';(o.notes||[]).forEach(t=>{const e=document.createElement('li');e.textContent=t;e.style.animationDelay=(l.children.length*70+150)+'ms';l.appendChild(e);});};
+window.__init=o=>{$('v').textContent='Ember '+o.version;if(o.major){document.body.classList.add('major');$('hv').textContent=o.version.split('.').slice(0,2).join('.');$('ok').textContent='Start browsing';}const l=$('n');l.textContent='';(o.notes||[]).forEach(t=>{const e=document.createElement('li');e.textContent=t;e.style.animationDelay=(l.children.length*70+150)+'ms';l.appendChild(e);});};
 $('ok').onclick=()=>window.whatsNew.close();
 document.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key==='Escape')$('ok').click();});
 </script></body></html>
