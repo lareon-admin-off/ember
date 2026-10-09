@@ -24,6 +24,7 @@
       "features.js",
       "features-main.js",
       "sync-main.js",
+      "passwords-main.js",
       "setup-preload.js",
       "whatsnew.json",
       "whatsnew.html",

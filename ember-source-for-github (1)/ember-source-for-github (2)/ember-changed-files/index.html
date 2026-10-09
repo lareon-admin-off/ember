@@ -277,7 +277,7 @@ body.win:not(.dock-right) #top{padding-right:146px} /* room for the Windows wind
     <button id="add">+ New tab</button>
     <button id="addp">🕶 Private tab</button>
     <button id="signin"><svg class="star" width="18" height="18" viewBox="0 0 150 150" aria-hidden="true"><path d="M75 28 Q55 45 55 70 Q40 65 25 75 Q42 80 53 90 Q45 105 48 122 Q60 110 68 95 Q70 112 75 128 Q80 112 82 95 Q90 110 102 122 Q105 105 97 90 Q108 80 125 75 Q110 65 95 70 Q95 45 75 28Z" fill="url(#lareonStar)"/></svg>Sign in with Lareon</button>
-    <div class="foot"><svg class="star" width="14" height="14" viewBox="0 0 150 150" aria-hidden="true"><path d="M75 28 Q55 45 55 70 Q40 65 25 75 Q42 80 53 90 Q45 105 48 122 Q60 110 68 95 Q70 112 75 128 Q80 112 82 95 Q90 110 102 122 Q105 105 97 90 Q108 80 125 75 Q110 65 95 70 Q95 45 75 28Z" fill="url(#lareonStar)"/></svg><span>Ember <span id="ver">0.9.0</span> · © 2026 <b>Lareon</b></span></div>
+    <div class="foot"><svg class="star" width="14" height="14" viewBox="0 0 150 150" aria-hidden="true"><path d="M75 28 Q55 45 55 70 Q40 65 25 75 Q42 80 53 90 Q45 105 48 122 Q60 110 68 95 Q70 112 75 128 Q80 112 82 95 Q90 110 102 122 Q105 105 97 90 Q108 80 125 75 Q110 65 95 70 Q95 45 75 28Z" fill="url(#lareonStar)"/></svg><span>Ember <span id="ver">1.0.0</span> · © 2026 <b>Lareon</b></span></div>
   </aside>
   <div id="main">
     <div id="top">
@@ -821,7 +821,7 @@ function render() {
 }
 $('#add').onclick = () => newTab();
 $('#addp').onclick = () => newTab('', true);
-$('#signin').onclick = () => newTab('https://lareon.org/account');
+$('#signin').onclick = () => { if (window.openEmberSettings) window.openEmberSettings(); else newTab('https://lareon.org/account'); };
 $('#bar').addEventListener('keydown', e => { if (e.key === 'Enter') go(e.target.value); });
 $('#bar').addEventListener('focus', e => e.target.select());
 $('#sform').onsubmit = e => { e.preventDefault(); go($('#q').value); $('#q').value = ''; };

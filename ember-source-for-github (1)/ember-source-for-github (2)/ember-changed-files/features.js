@@ -162,7 +162,7 @@
     document.addEventListener('play',function(e){if(e.target&&e.target.pause)stop(e.target);},true);
     document.querySelectorAll('video[autoplay],audio[autoplay]').forEach(stop);}catch(e){}})()`;
   function calmApply(w) { if (!P.calm) return; try { w.executeJavaScript(CALM_JS); } catch (_) {} }
-  const pill = document.createElement('button'); pill.id = 'calmpill'; pill.textContent = '🌙 Calm'; pill.title = 'Calm mode is on. Click to turn it off.';
+  const pill = document.createElement('button'); pill.id = 'calmpill'; pill.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>Calm'; pill.title = 'Calm mode is on. Click to turn it off.';
   pill.onclick = () => setCalm(false);
   function setCalm(v) { P.calm = !!v; savePrefs(); pill.classList.toggle('on', P.calm); toast(P.calm ? 'Calm mode on' : 'Calm mode off'); if (P.calm) tabs.forEach(t => t.wv && calmApply(t.wv)); drawSettings(); }
 
@@ -356,7 +356,128 @@
 
   let dlDir = '';
   const sw = (k, on) => '<button class="sw' + (on ? ' on' : '') + '" data-sw="' + k + '" role="switch" aria-checked="' + !!on + '"></button>';
+  /* ---------- saved passwords ---------- */
+  const PTOK = '__ep' + Array.from(crypto.getRandomValues(new Uint8Array(12))).map(b => b.toString(16).padStart(2, '0')).join('') + ':';
+  const PW_JS = '(function(){try{if(window.__emberPw)return;window.__emberPw=1;var T=' + JSON.stringify(PTOK) + ';' +
+    'function vis(e){var r=e.getBoundingClientRect();return r.width>0&&r.height>0}' +
+    'function who(p){var f=p.form||document,l=[].slice.call(f.querySelectorAll("input")),i=l.indexOf(p);for(var k=i-1;k>=0;k--){var t=(l[k].type||"text").toLowerCase();if(/^(text|email|tel|)$/.test(t)&&l[k].value&&vis(l[k]))return l[k].value}return ""}' +
+    'function grab(r){var q=(r&&r.querySelectorAll?r:document).querySelectorAll("input[type=password]"),a=[].filter.call(q,function(e){return e.value&&vis(e)});if(!a.length)return;var p=a[a.length-1];console.log(T+JSON.stringify({u:who(p),p:p.value}))}' +
+    'document.addEventListener("submit",function(e){grab(e.target)},true);' +
+    'document.addEventListener("click",function(e){var b=e.target&&e.target.closest&&e.target.closest("button:not([type=button]),input[type=submit]");if(b)grab(b.form||document)},true);' +
+    'document.addEventListener("keydown",function(e){if(e.key==="Enter"&&e.target&&e.target.type==="password")grab(e.target.form||document)},true);' +
+    '}catch(e){}})()';
+  const PW_PROBE = '[].some.call(document.querySelectorAll("input[type=password]"),function(e){var r=e.getBoundingClientRect();return r.width>0&&r.height>0})';
+  const pwFillJs = (o, u, p) => '(function(o,u,p){if(location.origin!==o)return false;function vis(e){var r=e.getBoundingClientRect();return r.width>0&&r.height>0}' +
+    'function set(el,v){Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value").set.call(el,v);el.dispatchEvent(new Event("input",{bubbles:true}));el.dispatchEvent(new Event("change",{bubbles:true}))}' +
+    'var ps=[].filter.call(document.querySelectorAll("input[type=password]"),vis);if(!ps.length)return false;var pw=ps[0];set(pw,p);' +
+    'var l=[].slice.call((pw.form||document).querySelectorAll("input")),i=l.indexOf(pw);for(var k=i-1;k>=0;k--){var t=(l[k].type||"text").toLowerCase();if(/^(text|email|tel|)$/.test(t)&&vis(l[k])){if(u)set(l[k],u);break}}return true})(' + JSON.stringify(o) + ',' + JSON.stringify(u) + ',' + JSON.stringify(p) + ')';
+  const pwOk = o => /^https:/i.test(o) || /^http:\/\/(localhost|127\.0\.0\.1)(:|$)/i.test(o);
+  const pwOrigin = w => { try { const o = new URL(w.getURL()).origin; return pwOk(o) ? o : ''; } catch (_) { return ''; } };
+  const pwCss = document.createElement('style');
+  pwCss.textContent = '#pwbar{display:none;align-items:center;gap:10px;padding:7px 12px;background:var(--surface);border-bottom:1px solid var(--border);font-size:13px;color:var(--text);-webkit-app-region:no-drag;flex-wrap:wrap}#pwbar.show{display:flex}#pwbar svg{flex:none;color:var(--accent)}#pwbar span{flex:1;min-width:160px;overflow:hidden;text-overflow:ellipsis}#pwbar .btn1{padding:5px 12px;font-size:12.5px}';
+  document.head.appendChild(pwCss);
+  const pwbar = document.createElement('div'); pwbar.id = 'pwbar'; bar.insertAdjacentElement('afterend', pwbar);
+  const KEY_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></svg>';
+  let pwState = null, pwShownFor = null;
+  function pwHide() { pwState = null; pwbar.classList.remove('show'); pwbar.innerHTML = ''; }
+  function drawPwBar() {
+    const s = pwState, a = tabs.find(t => t.id === active);
+    if (!s || !a || a !== s.t || a.priv) { pwbar.classList.remove('show'); pwShownFor = null; return; }
+    if (pwShownFor === s) { pwbar.classList.add('show'); return; }
+    pwShownFor = s; pwbar.classList.add('show');
+    const host = (() => { try { return new URL(s.origin).host; } catch (_) { return s.origin; } })();
+    if (s.kind === 'fill') {
+      pwbar.innerHTML = KEY_SVG + '<span>Saved login for ' + X(host) + '</span>' + s.items.map((it, i) => '<button class="btn1 pri" data-fill="' + i + '">Fill ' + X(it.username || 'login') + '</button>').join('') + '<button class="btn1" data-no="1">Not now</button>';
+    } else {
+      pwbar.innerHTML = KEY_SVG + '<span>' + (s.kind === 'update' ? 'Update the saved password' : 'Save the password') + (s.u ? ' for ' + X(s.u) : '') + ' on ' + X(host) + '?</span><button class="btn1 pri" data-save="1">' + (s.kind === 'update' ? 'Update' : 'Save') + '</button><button class="btn1" data-no="1">Not now</button>' + (s.kind === 'save' ? '<button class="btn1" data-never="1">Never for this site</button>' : '');
+    }
+    pwbar.querySelectorAll('[data-fill]').forEach(b => b.onclick = async () => {
+      const it = s.items[+b.dataset.fill]; const r = await E.pwGet(it.id);
+      if (!r || r.error) { toast('Could not read that password'); return; }
+      try { await s.t.wv.executeJavaScript(pwFillJs(s.origin, r.username, r.password)); } catch (_) { toast('Could not fill this page'); }
+      pwHide();
+    });
+    const no = pwbar.querySelector('[data-no]'); if (no) no.onclick = () => { s.t.pwDismiss = s.t.pwDismiss || {}; s.t.pwDismiss[s.origin] = 1; pwHide(); };
+    const nv = pwbar.querySelector('[data-never]'); if (nv) nv.onclick = async () => { await E.pwNever(s.origin); toast('Ember won’t ask for ' + host); pwHide(); };
+    const sv = pwbar.querySelector('[data-save]'); if (sv) sv.onclick = async () => { const r = await E.pwSave({ origin: s.origin, username: s.u, password: s.p }); s.p = ''; pwHide(); toast(r && r.ok ? 'Password saved' : 'Could not save the password'); if (r && r.ok) loadPw().then(drawSettings); };
+  }
+  setInterval(drawPwBar, 400);
+  async function pwProbe(w) { try { return !!(await w.executeJavaScript(PW_PROBE)); } catch (_) { return false; } }
+  async function pwOffer(t) {
+    const p = t.pwPending; if (!p || !t.wv) return;
+    if (Date.now() - p.at > 9000) { t.pwPending = null; return; }
+    if (await pwProbe(t.wv)) return;            // still on the login form: probably a wrong password, ask nothing
+    t.pwPending = null;
+    const r = await E.pwCheck({ origin: p.origin, username: p.u, password: p.p });
+    if (!r || (r.result !== 'new' && r.result !== 'update')) return;
+    pwShownFor = null; pwState = { t, kind: r.result, origin: p.origin, u: p.u, p: p.p };
+  }
+  async function pwFillOffer(t) {
+    if (!t || t.priv || !t.wv || !E.pwFind) return;
+    const o = pwOrigin(t.wv); if (!o || (t.pwDismiss && t.pwDismiss[o])) return;
+    if (pwState && pwState.t === t && pwState.kind !== 'fill') return;
+    const r = await E.pwFind(o); if (!r || !r.items || !r.items.length) return;
+    if (!(await pwProbe(t.wv))) { if (pwState && pwState.t === t && pwState.kind === 'fill') pwHide(); return; }
+    if (pwState && pwState.t === t && pwState.kind === 'fill') return;
+    pwShownFor = null; pwState = { t, kind: 'fill', origin: o, items: r.items };
+  }
+  const _mk2 = mkWv;
+  mkWv = function (t) {
+    _mk2(t); const w = t.wv; if (!w || t.priv || !E.pwCheck) return;
+    w.addEventListener('dom-ready', () => { try { w.executeJavaScript(PW_JS); } catch (_) {} });
+    w.addEventListener('console-message', e => {
+      const m = String(e.message || ''); if (m.indexOf(PTOK) !== 0) return;
+      let d; try { d = JSON.parse(m.slice(PTOK.length)); } catch (_) { return; }
+      const o = pwOrigin(w); if (!o || typeof d.p !== 'string' || !d.p || d.p.length > 1000) return;
+      t.pwPending = { origin: o, u: String(d.u || '').slice(0, 300), p: d.p, at: Date.now() };
+      setTimeout(() => pwOffer(t), 1200); setTimeout(() => pwOffer(t), 3500);
+    });
+    const after = () => { setTimeout(() => { pwOffer(t); pwFillOffer(t); }, 700); };
+    w.addEventListener('did-finish-load', after); w.addEventListener('did-navigate-in-page', after);
+    w.addEventListener('did-navigate', () => { if (pwState && pwState.t === t && pwState.kind === 'fill') pwHide(); });
+  };
+  let pw = { st: null, items: [], adding: false, msg: '', sure: '' };
+  async function loadPw() { try { pw.st = E.pwStatus ? await E.pwStatus() : null; const r = pw.st && pw.st.available && E.pwList ? await E.pwList() : null; pw.items = r && r.items ? r.items.slice().sort((a, b) => a.origin.localeCompare(b.origin)) : []; } catch (_) { pw.st = null; } }
+  function pwHtml() {
+    if (!E.pwStatus) return '';
+    let h = '<h3>Passwords</h3>';
+    if (!pw.st || !pw.st.available) return h + '<p>Saved passwords need your system’s secure storage (Keychain on Mac, Windows login, or the Linux keyring), and it isn’t available right now. Ember won’t save passwords without it.</p>';
+    h += '<p>Kept on this computer only, locked with your system’s secure storage. They are never synced or sent anywhere.</p>';
+    h += pw.items.length ? pw.items.map(i => { let host = i.origin; try { host = new URL(i.origin).host; } catch (_) {} return '<div class="row1"><div>' + X(host) + '<small>' + X(i.username || '(no username)') + '</small></div><div class="sp-acts" style="margin:0"><button class="btn1" data-pcopy="' + X(i.id) + '">Copy</button><button class="btn1 danger" data-pdel="' + X(i.id) + '">' + (pw.sure === i.id ? 'Sure?' : 'Delete') + '</button></div></div>'; }).join('') : '<p>No saved passwords yet. When you sign in somewhere, Ember will offer to save it.</p>';
+    h += pw.adding
+      ? '<div style="margin-top:10px;display:grid;gap:8px"><input id="pwSite" placeholder="Website, like github.com" spellcheck="false"><input id="pwUser" placeholder="Username or email" spellcheck="false" autocomplete="off"><input id="pwPass" type="password" placeholder="Password" autocomplete="new-password"><div class="sp-acts"><button class="btn1 pri" id="pwSaveBtn">Save</button><button class="btn1" id="pwCancel">Cancel</button></div></div>'
+      : '<div class="sp-acts"><button class="btn1" id="pwAdd">Add a password</button></div>';
+    return h + (pw.msg ? '<p>' + X(pw.msg) + '</p>' : '');
+  }
+  function pwWire() {
+    const g = id => document.getElementById(id);
+    if (g('pwAdd')) g('pwAdd').onclick = () => { pw.adding = true; pw.msg = ''; drawSettings(); };
+    if (g('pwCancel')) g('pwCancel').onclick = () => { pw.adding = false; drawSettings(); };
+    if (g('pwSaveBtn')) g('pwSaveBtn').onclick = async () => {
+      let site = g('pwSite').value.trim(); if (site && !/^https?:\/\//i.test(site)) site = 'https://' + site;
+      const r = await E.pwSave({ origin: site, username: g('pwUser').value.trim(), password: g('pwPass').value });
+      if (r && r.ok) { pw.adding = false; pw.msg = 'Saved.'; await loadPw(); } else pw.msg = 'Enter a website and a password.';
+      drawSettings();
+    };
+    ov.querySelectorAll('[data-pcopy]').forEach(b => b.onclick = async () => {
+      const r = await E.pwGet(b.dataset.pcopy); if (!r || r.error) return toast('Could not read that password');
+      try { await navigator.clipboard.writeText(r.password); toast('Copied. Clears in 30 seconds'); const v = r.password; setTimeout(async () => { try { if ((await navigator.clipboard.readText()) === v) await navigator.clipboard.writeText(''); } catch (_) {} }, 30000); } catch (_) { toast('Could not copy'); }
+    });
+    ov.querySelectorAll('[data-pdel]').forEach(b => b.onclick = async () => {
+      const id = b.dataset.pdel; if (pw.sure !== id) { pw.sure = id; drawSettings(); return; }
+      pw.sure = ''; await E.pwDelete(id); await loadPw(); drawSettings();
+    });
+  }
+  function paintSignin() {
+    const b = document.getElementById('signin'); if (!b) return;
+    const star = b.querySelector('svg'); const keep = star ? star.outerHTML : '';
+    const name = String(acct.email || '').split('@')[0] || 'Lareon account';
+    b.innerHTML = keep + (acct.signedIn ? X(name) : 'Sign in with Lareon');
+    b.title = acct.signedIn ? 'Signed in as ' + acct.email + '. Open settings.' : 'Sign in to sync Ember';
+  }
+  refreshAcct().then(paintSignin);
   function drawSettings() {
+    paintSignin();
     if (!ov.classList.contains('show')) return;
     const sn = snoozed(), active = focus.until > Date.now(), left = Math.ceil((focus.until - Date.now()) / 60000);
     ov.innerHTML = '<div class="card1"><div style="display:flex;justify-content:space-between;align-items:center"><h2>Settings</h2><button class="btn1" id="setX">Done</button></div>' +
@@ -366,7 +487,7 @@
       '<div class="row1"><div>Clean links<small>Removes tracking bits like utm_ and fbclid from addresses.</small></div>' + sw('clean', P.clean) + '</div>' +
       '<div class="row1"><div>Calm mode<small>Stops videos from starting on their own and hides notification and location requests.</small></div>' + sw('calm', P.calm) + '</div>' +
       '<div class="row1"><div>Bookmarks bar<small>Shows your bookmarks under the address bar.</small></div>' + sw('bar', P.bar) + '</div>' +
-      '<h3>Lareon account</h3>' + acctHtml() +
+      '<h3>Lareon account</h3>' + acctHtml() + pwHtml() +
       '<h3>Bring your bookmarks</h3><div class="row1"><div>From Chrome, Edge or Brave<small>Ember reads the bookmarks already on this computer.</small></div><button class="btn1" id="setImp">Import</button></div>' +
       '<div class="row1"><div>From a file<small>Any browser can export bookmarks as an .html file.</small></div><button class="btn1" id="setImpF">Choose file…</button></div>' +
       '<h3>Focus session</h3>' + (active
@@ -375,7 +496,7 @@
       '<h3>Snoozed tabs</h3>' + (sn.length ? sn.map((x, i) => '<div class="row1"><div>' + X(x.t || x.u) + '<small>Back ' + whenTxt(x.wake) + '</small></div><button class="btn1" data-wake="' + i + '">Open now</button></div>').join('') : '<p>Nothing snoozed. Right-click a tab to snooze it.</p>') +
       '<h3>Safety</h3><p>Safe downloads, site checks and threat protection are always on. Click the lock beside the address to see the check for a site.</p></div>';
     $('#setX').onclick = () => ov.classList.remove('show');
-    acctWire();
+    acctWire(); pwWire();
     $('#setDir').onclick = async () => { const d = E.pickFolder && await E.pickFolder(); if (d) { dlDir = d; drawSettings(); toast('Downloads will go to ' + d); } };
     $('#setStart').onchange = e => { P.startup = e.target.value; savePrefs(); };
     ov.querySelectorAll('[data-sw]').forEach(b => b.onclick = () => { const k = b.dataset.sw; if (k === 'calm') return setCalm(!P.calm); P[k] = !P[k]; savePrefs(); barKey = ''; drawBar(); drawSettings(); });
@@ -384,7 +505,7 @@
     const fe = $('#fEnd'); if (fe) fe.onclick = endFocus;
     ov.querySelectorAll('[data-wake]').forEach(b => b.onclick = () => { const l = snoozed(), x = l.splice(+b.dataset.wake, 1)[0]; lsSet('ember.snoozed', l); if (x) newTab(x.u); drawSettings(); });
   }
-  async function openSettings() { await refreshAcct(); try { const s = E.settingsGet && await E.settingsGet(); if (s) dlDir = s.downloadDir; } catch (_) {} ov.classList.add('show'); drawSettings(); }
+  async function openSettings() { await refreshAcct(); await loadPw(); pw.adding = false; pw.msg = ''; pw.sure = ''; try { const s = E.settingsGet && await E.settingsGet(); if (s) dlDir = s.downloadDir; } catch (_) {} ov.classList.add('show'); drawSettings(); }
   window.openEmberSettings = openSettings;
 
   /* ---------- site check panel extras ---------- */

@@ -2,6 +2,7 @@
 const fs = require('fs'), path = require('path'), os = require('os');
 module.exports = function (c) {
   require('./sync-main')(c);
+  require('./passwords-main')(c);
   const { app, ipcMain, session, dialog, setup, hostOf, permDecided, getWin } = c;
   const sfile = () => path.join(app.getPath('userData'), 'ember-settings.json');
   const rd = () => { try { return JSON.parse(fs.readFileSync(sfile(), 'utf8')); } catch (_) { return {}; } };

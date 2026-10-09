@@ -35,5 +35,8 @@ contextBridge.exposeInMainWorld('ember', {
   acctLogout: () => ipcRenderer.invoke('acct:logout'),
   syncPull: () => ipcRenderer.invoke('sync:pull'),
   syncPush: (d, b) => ipcRenderer.invoke('sync:push', d, b),
+  pwStatus: () => ipcRenderer.invoke('pw:status'), pwList: () => ipcRenderer.invoke('pw:list'), pwFind: o => ipcRenderer.invoke('pw:find', o),
+  pwGet: id => ipcRenderer.invoke('pw:get', id), pwCheck: d => ipcRenderer.invoke('pw:check', d), pwSave: d => ipcRenderer.invoke('pw:save', d),
+  pwDelete: id => ipcRenderer.invoke('pw:delete', id), pwNever: o => ipcRenderer.invoke('pw:never', o),
   search: { query: (q, page) => ipcRenderer.invoke('search:query', q, page) }
 });
