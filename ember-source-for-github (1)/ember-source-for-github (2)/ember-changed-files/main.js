@@ -51,7 +51,7 @@ app.on('web-contents-created', (_, wc) => {
     });
     wc.on('before-input-event', (e, input) => {
       if (input.type !== 'keyDown' || !(input.control || input.meta)) return;
-      if (/^(t|T|N|w|r|l|b|B|\[|\]|Tab|=|\+|-|0|[1-9])$/.test(input.key)) { e.preventDefault(); win && win.webContents.send('shortcut', { key: input.key, shift: input.shift }); }
+      if (/^(t|T|N|w|r|l|b|B|f|d|p|A|\[|\]|Tab|=|\+|-|0|[1-9])$/.test(input.key)) { e.preventDefault(); win && win.webContents.send('shortcut', { key: input.key, shift: input.shift }); }
     });
     wc.on('will-navigate', (e, url) => {
       if (/^(https?|about|file):/i.test(url)) return;
@@ -218,6 +218,15 @@ ipcMain.on('dl:open', (_, p) => {
 });
 ipcMain.on('dl:discard', (_, id, p) => { const it = dlItems.get(id); if (it) it.cancel(); if (dlPaths.has(p) && inDownloads(p)) setTimeout(() => { try { fs.unlinkSync(p); } catch (_) {} }, it ? 400 : 0); });
 // private tabs: wipe everything their in-memory session held
+ipcMain.handle('data:clear', async (_, o) => {
+  o = o || {};
+  try {
+    const ses = session.defaultSession;
+    if (o.site) await ses.clearStorageData();
+    if (o.cache) { await ses.clearCache(); await ses.clearAuthCache(); }
+    return true;
+  } catch (_) { return false; }
+});
 ipcMain.handle('private:wipe', async (_, id) => {
   const n = parseInt(id, 10); if (!n) return false;
   try { const ses = session.fromPartition('ember-private-' + n); await ses.clearStorageData(); await ses.clearCache(); await ses.clearAuthCache(); await ses.clearHostResolverCache(); return true; } catch (_) { return false; }

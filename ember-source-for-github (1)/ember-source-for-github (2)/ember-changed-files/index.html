@@ -895,5 +895,223 @@ let saved = []; try { saved = JSON.parse(localStorage.getItem('ember.tabs') || '
 if (saved.length) saved.forEach(u => newTab(u)); else newTab();
 </script>
 <script>(function(){var m=/Ember\/(\d[\d.]*)/i.exec(navigator.userAgent),e=document.getElementById("ver");if(m&&e)e.textContent=m[1];})();</script>
+<style>
+#bm{font-size:17px;line-height:1}#bm.on{color:var(--accent)!important}
+#findbar{position:fixed;top:66px;right:16px;z-index:45;display:none;align-items:center;gap:6px;padding:8px 10px;border-radius:14px;background:var(--surface2);border:1px solid var(--border);box-shadow:0 14px 40px rgba(0,0,0,.45);-webkit-app-region:no-drag}
+#findbar.show{display:flex}
+#findbar input{width:190px;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font:13px inherit;outline:none}
+#findbar input:focus{border-color:var(--accent)}
+#findbar span{min-width:54px;text-align:center;color:var(--muted);font-size:12px}
+#findbar button{width:28px;height:28px;border:0;border-radius:8px;background:none;color:var(--muted);cursor:pointer;font-size:14px}
+#findbar button:hover{background:var(--surface);color:var(--text)}
+</style>
+<div id="findbar"><input id="fq" placeholder="Find in page" spellcheck="false" autocomplete="off"><span id="fcnt"></span><button id="fprev" title="Previous (Shift+Enter)" aria-label="Previous match">&#9650;</button><button id="fnext" title="Next (Enter)" aria-label="Next match">&#9660;</button><button id="fx" title="Close (Esc)" aria-label="Close find">&#10005;</button></div>
+<script>
+/* Find in page, bookmarks and print. Added on top of the existing browser code. */
+(function () {
+  const KEY = 'ember.bookmarks';
+  const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (_) { return []; } };
+  const save = l => { try { localStorage.setItem(KEY, JSON.stringify(l)); } catch (_) {} };
+  const isWeb = t => !!(t && t.mode === 'web' && t.wv && t.url);
+
+  /* ---- bookmarks ---- */
+  const bm = document.createElement('button');
+  bm.id = 'bm'; bm.title = 'Bookmark this page (Ctrl+D)'; bm.setAttribute('aria-label', 'Bookmark this page'); bm.textContent = '\u2606';
+  $('#reload').insertAdjacentElement('afterend', bm);
+  function refresh() { const t = cur(), on = isWeb(t) && load().some(b => b.u === t.url); bm.classList.toggle('on', on); bm.textContent = on ? '\u2605' : '\u2606'; }
+  function toggleBm() {
+    const t = cur();
+    if (!isWeb(t)) { toast('Open a web page first'); return; }
+    if (t.priv) { toast('Private tabs don\u2019t save bookmarks'); return; }
+    const l = load(), i = l.findIndex(b => b.u === t.url);
+    if (i >= 0) { l.splice(i, 1); toast('Bookmark removed'); }
+    else { l.unshift({ u: t.url, t: (t.title && t.title !== 'Loading\u2026') ? t.title : t.url, ts: Date.now() }); toast('Bookmarked'); }
+    save(l); refresh();
+  }
+  bm.onclick = toggleBm;
+  const baseDraw = drawLib;
+  const TABS = [['history', 'Search history'], ['downloads', 'Downloads'], ['bookmarks', 'Bookmarks'], ['privacy', 'Clear data']];
+  async function clearSelected(o) {
+    const snap = {}; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); snap[k] = localStorage.getItem(k); } } catch (_) {}
+    let ok = true;
+    if (o.site || o.cache) { ok = !!(window.ember && window.ember.clearData) && await window.ember.clearData({ site: !!o.site, cache: !!o.cache }); }
+    try { Object.keys(snap).forEach(k => localStorage.setItem(k, snap[k])); } catch (_) {} // Ember's own saved data survives a site-data wipe
+    if (o.hist) { hist = []; saveHist(); }
+    if (o.dl) { dls = dls.filter(d => d.state === 'progressing' || d.state === 'paused'); saveDls(); }
+    if (o.bm) save([]);
+    return ok;
+  }
+  drawLib = function (t) {
+    const tab = t.libTab || 'history';
+    if (tab !== 'bookmarks' && tab !== 'privacy') {
+      baseDraw(t);
+      const bar = document.querySelector('#library .lib-tabs');
+      if (bar) TABS.slice(2).forEach(([k, l]) => { const b = document.createElement('button'); b.textContent = l; b.onclick = () => { t.libTab = k; drawLib(t); }; bar.appendChild(b); });
+      return;
+    }
+    const box = $('#library');
+    let h = '<div class="lib"><h1>Library</h1><div class="lib-tabs">' + TABS.map(([k, l]) => '<button data-l="' + k + '"' + (k === tab ? ' class="on"' : '') + '>' + l + '</button>').join('') + '</div>';
+    if (tab === 'bookmarks') {
+      const l = load();
+      h += '<div class="lib-bar"><span class="lib-note">Saved on this device.</span>' + (l.length ? '<button class="lib-clear" id="bmClear">Clear all</button>' : '') + '</div>' +
+        (l.length ? l.map((b, i) => '<div class="lib-row"><span class="lib-main" data-u="' + esc(b.u) + '">' + esc(b.t) + '<small style="display:block;color:var(--muted)">' + esc(b.u) + '</small></span><span class="lib-time">' + ago(b.ts) + '</span><i data-bd="' + i + '" title="Remove">\u00d7</i></div>').join('') : '<div class="lib-empty">No bookmarks yet. Press Ctrl+D on a page to save it.</div>');
+    } else {
+      h += '<div class="lib-bar"><span class="lib-note">Choose what to clear from this device.</span></div>' +
+        [['hist', 'Search history'], ['dl', 'Downloads list'], ['site', 'Cookies and site data (signs you out of websites)'], ['cache', 'Cached images and files'], ['bm', 'Bookmarks']].map(([k, l]) => '<label class="lib-sw" style="display:flex;padding:8px 2px"><input type="checkbox" data-c="' + k + '"' + (k === 'bm' ? '' : ' checked') + '> ' + l + '</label>').join('') +
+        '<div style="margin-top:14px"><button class="lib-clear" id="clrGo">Clear selected</button></div><p class="lib-note" style="margin-top:12px">Pages that are already open keep their data until you reload them.</p>';
+    }
+    box.innerHTML = h + '</div>';
+    box.querySelectorAll('[data-l]').forEach(b => b.onclick = () => { t.libTab = b.dataset.l; drawLib(t); });
+    box.querySelectorAll('[data-u]').forEach(b => b.onclick = () => newTab(b.dataset.u));
+    box.querySelectorAll('[data-bd]').forEach(b => b.onclick = () => { const a = load(); a.splice(+b.dataset.bd, 1); save(a); drawLib(t); refresh(); });
+    const c = $('#bmClear'); if (c) c.onclick = () => { save([]); drawLib(t); refresh(); };
+    const go = $('#clrGo');
+    if (go) go.onclick = async () => {
+      const o = {}; box.querySelectorAll('[data-c]').forEach(i => o[i.dataset.c] = i.checked);
+      go.disabled = true; const ok = await clearSelected(o);
+      toast(ok ? 'Cleared' : 'Couldn\u2019t clear everything'); drawLib(t); refresh();
+    };
+  };
+
+  /* ---- find in page ---- */
+  const fb = $('#findbar'), fq = $('#fq'), fc = $('#fcnt'); let fwv = null;
+  function onFound(e) { const r = e.result || {}; fc.textContent = r.matches ? r.activeMatchOrdinal + '/' + r.matches : '0/0'; }
+  function closeFind(quiet) {
+    const w = fwv; fwv = null;
+    if (w) { try { w.stopFindInPage('clearSelection'); w.removeEventListener('found-in-page', onFound); if (!quiet) w.focus(); } catch (_) {} }
+    fb.classList.remove('show'); fc.textContent = '';
+  }
+  function run(next, fwd) {
+    if (!fwv) return; const q = fq.value;
+    if (!q) { try { fwv.stopFindInPage('clearSelection'); } catch (_) {} fc.textContent = ''; return; }
+    try { fwv.findInPage(q, next ? { findNext: true, forward: fwd } : undefined); } catch (_) {}
+  }
+  function openFind() {
+    const t = cur();
+    if (!isWeb(t) || t.error) { toast('Find works on web pages'); return; }
+    if (fwv && fwv !== t.wv) closeFind(true);
+    fwv = t.wv; fwv.addEventListener('found-in-page', onFound);
+    fb.classList.add('show'); fq.focus(); fq.select(); if (fq.value) run(false);
+  }
+  fq.oninput = () => run(false);
+  fq.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); run(true, !e.shiftKey); } else if (e.key === 'Escape') { e.preventDefault(); closeFind(); } };
+  $('#fnext').onclick = () => run(true, true); $('#fprev').onclick = () => run(true, false); $('#fx').onclick = () => closeFind();
+
+  /* ---- print ---- */
+  function printPage() { const t = cur(); if (!isWeb(t)) { toast('Open a web page first'); return; } try { t.wv.print(); } catch (_) { toast('Couldn\u2019t open printing'); } }
+
+  /* ---- keep things in step with tab changes, add shortcuts ---- */
+  const baseSelect = select;
+  select = function (id) { baseSelect(id); closeFind(true); refresh(); };
+  setInterval(refresh, 700); refresh();
+  document.addEventListener('keydown', e => {
+    if (!(e.metaKey || e.ctrlKey) || e.shiftKey || e.altKey) return;
+    const k = e.key.toLowerCase();
+    if (k === 'f') { e.preventDefault(); openFind(); }
+    else if (k === 'd') { e.preventDefault(); toggleBm(); }
+    else if (k === 'p') { e.preventDefault(); printPage(); }
+  });
+})();
+</script>
+<style>
+#ctxmenu{position:fixed;z-index:60;display:none;min-width:210px;padding:6px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);box-shadow:0 18px 50px rgba(0,0,0,.5);-webkit-app-region:no-drag}
+#ctxmenu.show{display:block}
+#ctxmenu button{display:block;width:100%;text-align:left;padding:7px 12px;border:0;border-radius:8px;background:none;color:var(--text);font-size:13px;cursor:pointer}
+#ctxmenu button:hover{background:var(--surface)}#ctxmenu button:disabled{opacity:.4;cursor:default;background:none}
+#ctxmenu hr{border:0;border-top:1px solid var(--border);margin:5px 4px}
+.tab .spk{display:inline-flex;align-items:center;margin:0 4px;color:var(--accent);cursor:pointer}.tab .spk.muted{color:var(--muted)}
+#tabsearch{position:fixed;inset:0;z-index:70;display:none;align-items:flex-start;justify-content:center;padding-top:14vh;background:rgba(10,8,16,.55);-webkit-app-region:no-drag}
+#tabsearch.show{display:flex}
+#tabsearch .box{width:min(520px,90vw);padding:10px;border-radius:16px;background:var(--surface2);border:1px solid var(--border);box-shadow:0 24px 70px rgba(0,0,0,.55)}
+#tabsearch input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);font:14px inherit;outline:none}
+#tabsearch input:focus{border-color:var(--accent)}
+#tabsearch .it{display:block;width:100%;text-align:left;margin-top:4px;padding:8px 12px;border:0;border-radius:10px;background:none;color:var(--text);font-size:13.5px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#tabsearch .it small{display:block;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis}
+#tabsearch .it.on,#tabsearch .it:hover{background:var(--surface)}#tabsearch .it.on{outline:1px solid var(--accent)}
+</style>
+<div id="ctxmenu" role="menu"></div>
+<div id="tabsearch"><div class="box"><input id="tsq" placeholder="Jump to a tab" spellcheck="false" autocomplete="off"><div id="tsl"></div></div></div>
+<script>
+/* Right-click menu, tab muting and tab search. Added on top of the existing browser code. */
+(function () {
+  const cm = $('#ctxmenu');
+  const hideCm = () => cm.classList.remove('show');
+  const key = (k, shift) => document.dispatchEvent(new KeyboardEvent('keydown', { key: k, shiftKey: !!shift, ctrlKey: true, bubbles: true }));
+  function copyText(s) { const ta = document.createElement('textarea'); ta.value = s; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (_) {} ta.remove(); }
+  function showCm(items, x, y) {
+    cm.innerHTML = '';
+    items.forEach(it => {
+      if (it === '-') { cm.appendChild(document.createElement('hr')); return; }
+      const b = document.createElement('button'); b.textContent = it.label; b.disabled = !!it.off;
+      b.onclick = () => { hideCm(); it.run(); }; cm.appendChild(b);
+    });
+    cm.classList.add('show');
+    cm.style.left = Math.max(4, Math.min(x, innerWidth - cm.offsetWidth - 6)) + 'px';
+    cm.style.top = Math.max(4, Math.min(y, innerHeight - cm.offsetHeight - 6)) + 'px';
+  }
+  document.addEventListener('mousedown', e => { if (!cm.contains(e.target)) hideCm(); }, true);
+  window.addEventListener('blur', hideCm);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') hideCm(); }, true);
+
+  function attach(w) {
+    if (w.__ctx) return; w.__ctx = true;
+    w.addEventListener('context-menu', e => {
+      const t = tabs.find(x => x.wv === w); if (!t) return;
+      const p = e.params || {}, f = p.editFlags || {}, r = w.getBoundingClientRect(), items = [];
+      const sel = (p.selectionText || '').trim();
+      if (p.linkURL) items.push({ label: 'Open link in new tab', run: () => newTab(p.linkURL, !!t.priv) }, { label: 'Copy link address', run: () => copyText(p.linkURL) }, '-');
+      if (p.mediaType === 'image' && p.srcURL) items.push({ label: 'Open image in new tab', run: () => newTab(p.srcURL, !!t.priv) }, { label: 'Copy image address', run: () => copyText(p.srcURL) }, '-');
+      if (p.isEditable) items.push({ label: 'Cut', off: !f.canCut, run: () => w.cut() }, { label: 'Copy', off: !f.canCopy, run: () => w.copy() }, { label: 'Paste', off: !f.canPaste, run: () => w.paste() }, { label: 'Select all', run: () => w.selectAll() }, '-');
+      else if (sel) items.push({ label: 'Copy', run: () => w.copy() }, { label: 'Search for \u201c' + (sel.length > 24 ? sel.slice(0, 24) + '\u2026' : sel) + '\u201d', run: () => { newTab('', !!t.priv); search(sel); } }, '-');
+      items.push({ label: 'Back', run: () => $('#back').click() }, { label: 'Forward', run: () => $('#fwd').click() }, { label: 'Reload', run: () => $('#reload').click() }, '-', { label: 'Find in page\u2026', run: () => key('f') }, { label: 'Bookmark this page', run: () => key('d') }, { label: 'Print\u2026', run: () => key('p') });
+      showCm(items, r.left + (p.x || 0), r.top + (p.y || 0));
+    });
+  }
+  const scan = () => document.querySelectorAll('webview').forEach(attach);
+  new MutationObserver(scan).observe(document.body, { childList: true, subtree: true }); scan();
+
+  /* ---- mute / sound indicator on tabs ---- */
+  const SND = '<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8v4h3l4 3V5L6 8H3z"/>';
+  const ICON_ON = SND + '<path d="M13.5 7.5a3.5 3.5 0 010 5M15.5 5.5a6.5 6.5 0 010 9"/></svg>', ICON_OFF = SND + '<path d="M13 8l4 4M17 8l-4 4"/></svg>';
+  function decorate() {
+    const box = $('#tabs'); if (!box) return;
+    tabs.forEach((t, i) => {
+      const b = box.children[i]; if (!b || !(t.audible || t.muted) || !t.wv) return;
+      const s = document.createElement('u'); s.className = 'spk' + (t.muted ? ' muted' : ''); s.style.textDecoration = 'none';
+      s.title = t.muted ? 'Unmute tab' : 'Mute tab'; s.innerHTML = t.muted ? ICON_OFF : ICON_ON;
+      s.onclick = e => { e.stopPropagation(); try { t.muted = !t.wv.isAudioMuted(); t.wv.setAudioMuted(t.muted); } catch (_) {} render(); };
+      const x = b.querySelector('i'); if (x) b.insertBefore(s, x); else b.appendChild(s);
+    });
+  }
+  const baseRender = render; render = function () { baseRender(); decorate(); };
+  setInterval(() => {
+    let ch = false;
+    tabs.forEach(t => { if (!t.wv || t.mode !== 'web') return; try { const a = !!t.wv.isCurrentlyAudible(); if (a !== !!t.audible) { t.audible = a; ch = true; } } catch (_) {} });
+    if (ch) render();
+  }, 1500);
+
+  /* ---- tab search (Ctrl+Shift+A) ---- */
+  const ts = $('#tabsearch'), tq = $('#tsq'), tl = $('#tsl'); let hits = [], hi = 0;
+  const label = t => t.title || t.url || 'New tab';
+  function drawTs() {
+    const q = tq.value.trim().toLowerCase();
+    hits = tabs.filter(t => !q || (label(t) + ' ' + (t.url || '')).toLowerCase().includes(q)).slice(0, 8); hi = Math.min(hi, Math.max(0, hits.length - 1));
+    tl.innerHTML = hits.length ? '' : '<div style="padding:10px 12px;color:var(--muted);font-size:13px">No matching tabs</div>';
+    hits.forEach((t, i) => { const b = document.createElement('button'); b.className = 'it' + (i === hi ? ' on' : ''); b.textContent = label(t); if (t.url) { const s = document.createElement('small'); s.textContent = t.url; b.appendChild(s); } b.onclick = () => pick(t); tl.appendChild(b); });
+  }
+  function pick(t) { closeTs(); select(t.id); }
+  function closeTs() { ts.classList.remove('show'); tq.value = ''; }
+  function openTs() { ts.classList.add('show'); hi = 0; tq.value = ''; drawTs(); tq.focus(); }
+  tq.oninput = () => { hi = 0; drawTs(); };
+  tq.onkeydown = e => {
+    if (e.key === 'Escape') { e.preventDefault(); closeTs(); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); hi = Math.min(hits.length - 1, hi + 1); drawTs(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); hi = Math.max(0, hi - 1); drawTs(); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (hits[hi]) pick(hits[hi]); }
+  };
+  ts.addEventListener('mousedown', e => { if (e.target === ts) closeTs(); });
+  document.addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'a') { e.preventDefault(); openTs(); } });
+})();
+</script>
 </body>
 </html>

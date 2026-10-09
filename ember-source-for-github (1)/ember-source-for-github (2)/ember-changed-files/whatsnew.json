@@ -2,5 +2,14 @@
   "0.9.6": [
     "Ember now shows what’s new after it updates, like this window.",
     "Clicking Restart now in the update window restarts Ember right away."
+  ],
+  "0.9.7": [
+    "Find in page: press Ctrl+F to search the page you’re on.",
+    "Bookmarks: press Ctrl+D or tap the star in the toolbar, and find them in the Library.",
+    "Right-click menu: open links in a new tab, copy, paste, search for selected text and more.",
+    "Mute any tab that’s playing sound with the speaker icon on the tab.",
+    "Tab search: press Ctrl+Shift+A to jump to any open tab.",
+    "Clear data: in the Library, clear history, cookies and cache whenever you like.",
+    "Print any page with Ctrl+P."
   ]
 }

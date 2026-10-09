@@ -1,0 +1,27 @@
+const { contextBridge, ipcRenderer } = require('electron');
+contextBridge.exposeInMainWorld('ember', {
+  onOpenTab: cb => ipcRenderer.on('open-tab', (_, url, from) => cb(url, from)),
+  onBlocked: cb => ipcRenderer.on('nav:blocked', (_, b) => cb(b)),
+  onShortcut: cb => ipcRenderer.on('shortcut', (_, k) => cb(k)),
+  onDownload: cb => ipcRenderer.on('dl:update', (_, u) => cb(u)),
+  dlCancel: id => ipcRenderer.send('dl:cancel', id),
+  dlShow: p => ipcRenderer.send('dl:show', p),
+  dlOpen: p => ipcRenderer.send('dl:open', p),
+  clearData: o => ipcRenderer.invoke('data:clear', o),
+  wipePrivate: id => ipcRenderer.invoke('private:wipe', id),
+  certInfo: (h, id) => ipcRenderer.invoke('cert:get', h, id),
+  certAllow: (h, id) => ipcRenderer.invoke('cert:allow', h, id),
+  threatCheck: u => ipcRenderer.invoke('threat:check', u),
+  threatStatus: () => ipcRenderer.invoke('threat:status'),
+  threatAllow: (h, id) => ipcRenderer.invoke('threat:allow', h, id),
+  onNotice: cb => ipcRenderer.on('notice', (_, m) => cb(m)),
+  onPermission: cb => ipcRenderer.on('perm:ask', (_, p) => cb(p)),
+  permAnswer: (id, allow) => ipcRenderer.send('perm:answer', id, allow),
+  dlDiscard: (id, p) => ipcRenderer.send('dl:discard', id, p),
+  scamCheck: u => ipcRenderer.invoke('scam:check', u),
+  scamAllow: (h, id) => ipcRenderer.invoke('scam:allow', h, id),
+  httpAllow: (h, id) => ipcRenderer.invoke('http:allow', h, id),
+  adultCheck: u => ipcRenderer.invoke('adult:check', u),
+  adultAllow: (h, id) => ipcRenderer.invoke('adult:allow', h, id),
+  search: { query: (q, page) => ipcRenderer.invoke('search:query', q, page) }
+});
