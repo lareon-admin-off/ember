@@ -1,6 +1,6 @@
 // Lareon account sign-in and sync for Ember. Runs in the main process so the session token never reaches web pages.
 const fs = require('fs'), path = require('path');
-module.exports = function ({ app, ipcMain }) {
+module.exports = function ({ app, ipcMain, getWin }) {
   const { safeStorage } = require('electron');
   const BASE = process.env.LAREON_BASE || 'https://lareon.org';
   const file = () => path.join(app.getPath('userData'), 'lareon-account.json');
@@ -30,6 +30,27 @@ module.exports = function ({ app, ipcMain }) {
     const s = load(); if (!s) return { url: BASE + '/account' };
     try { const r = await api('/api/auth/handoff', { method: 'POST', body: '{}' }, s.token); if (r.status === 401) { drop(); return { url: BASE + '/account', signedOut: true }; } if (r.ok && r.d.code) return { url: BASE + '/account#hc=' + r.d.code }; } catch (_) {}
     return { url: BASE + '/account' };
+  });
+  // "Sign in with Lareon": open the official sign-in page, the person approves there, and Ember collects the session.
+  let linkTimer = null;
+  ipcMain.handle('acct:link', async () => {
+    if (linkTimer) { clearInterval(linkTimer); linkTimer = null; }
+    let st; try { st = await api('/api/auth/link/start', { method: 'POST', body: '{}' }); } catch (_) { return { url: BASE + '/account' }; }
+    if (!st.ok || !st.d.id) return { url: BASE + '/account' };
+    const { id, secret, short } = st.d; const until = Date.now() + 10 * 60000;
+    linkTimer = setInterval(async () => {
+      if (Date.now() > until) { clearInterval(linkTimer); linkTimer = null; return; }
+      try {
+        const r = await api('/api/auth/link/poll', { method: 'POST', body: JSON.stringify({ id, secret }) });
+        if (r.status === 410) { clearInterval(linkTimer); linkTimer = null; return; }
+        if (r.ok && r.d.token) {
+          clearInterval(linkTimer); linkTimer = null;
+          const u = r.d.user || {}; save({ token: r.d.token, email: u.email, username: u.username, name: u.display_name || '' });
+          const w = getWin && getWin(); if (w && !w.isDestroyed()) w.webContents.send('acct:linked', { email: u.email, name: u.display_name || u.username });
+        }
+      } catch (_) {}
+    }, 2000);
+    return { url: BASE + '/account?link=' + id, short };
   });
   ipcMain.handle('acct:login', async (_, u, p) => {
     try {

@@ -479,17 +479,27 @@
       b.innerHTML = '<i class="avt" style="background:linear-gradient(135deg,hsl(' + hue + ' 90% 60%),hsl(' + ((hue + 50) % 360) + ' 85% 55%))">' + X(Array.from(nm)[0].toUpperCase()) + '</i><span class="nm"><b>' + X(nm) + '</b><small>Lareon account</small></span>';
       b.title = 'Signed in as ' + acct.email + '. Open your Lareon account.';
     } else {
-      b.classList.remove('me'); b.innerHTML = b.dataset.star + 'Sign in with Lareon'; b.title = 'Sign in to Lareon';
+      b.classList.remove('me');
+      if (acct.pending && Date.now() < acct.pending.until) {
+        b.classList.add('me'); b.innerHTML = b.dataset.star + '<span class="nm"><b>Code ' + X(acct.pending.short) + '</b><small>Check it matches on the page</small></span>'; b.title = 'Waiting for you to approve in your browser tab. Click to start again.';
+      } else { acct.pending = null; b.innerHTML = b.dataset.star + 'Sign in with Lareon'; b.title = 'Sign in to Lareon'; }
     }
   }
   const meCss = document.createElement('style');
   meCss.textContent = '#signin.me{padding:7px 12px 7px 8px;gap:10px}#signin .avt{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:700 14px/1 inherit;font-style:normal;color:#1a1008}#signin .nm{display:flex;flex-direction:column;min-width:0;text-align:left;line-height:1.15}#signin .nm b{color:var(--text);font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#signin .nm small{font-size:11px;font-weight:500;color:var(--muted)}';
   document.head.appendChild(meCss);
   window.emberAccountClick = async () => {
+    if (!acct.signedIn) {
+      let r = null; try { r = E.acctLink && await E.acctLink(); } catch (_) {}
+      newTab((r && r.url) || 'https://lareon.org/account');
+      if (r && r.short) { acct.pending = { short: r.short, until: Date.now() + 600000 }; paintSignin(); setTimeout(paintSignin, 600500); }
+      return;
+    }
     let url = 'https://lareon.org/account';
     try { const r = E.acctOpen && await E.acctOpen(); if (r && r.url) url = r.url; if (r && r.signedOut) { acct.signedIn = false; paintSignin(); } } catch (_) {}
     newTab(url);
   };
+  try { E.onAcctLinked && E.onAcctLinked(d => { acct.pending = null; acct.signedIn = true; acct.email = d.email || ''; acct.name = d.name || ''; acct.msg = ''; paintSignin(); toast('Signed in as ' + (d.name || d.email)); drawSettings(); doSync(false); }); } catch (_) {}
   refreshAcct().then(paintSignin);
   function drawSettings() {
     paintSignin();
