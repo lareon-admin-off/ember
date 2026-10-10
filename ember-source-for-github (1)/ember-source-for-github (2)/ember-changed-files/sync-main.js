@@ -15,7 +15,7 @@ module.exports = function ({ app, ipcMain }) {
   function save(o) {
     const enc = safeStorage.isEncryptionAvailable();
     const t = enc ? safeStorage.encryptString(o.token).toString('base64') : o.token;
-    fs.writeFileSync(file(), JSON.stringify({ token: t, enc, email: o.email, username: o.username }), { mode: 0o600 });
+    fs.writeFileSync(file(), JSON.stringify({ token: t, enc, email: o.email, username: o.username, name: o.name || '' }), { mode: 0o600 });
   }
   const drop = () => { try { fs.unlinkSync(file()); } catch (_) {} };
   async function api(p, opt, tok) {
@@ -23,8 +23,14 @@ module.exports = function ({ app, ipcMain }) {
     let d = {}; try { d = await r.json(); } catch (_) {}
     return { ok: r.ok, status: r.status, d };
   }
-  const done = (r, u) => { save({ token: r.d.token, email: r.d.user.email, username: r.d.user.username }); return { ok: true, email: r.d.user.email }; };
-  ipcMain.handle('acct:state', () => { const s = load(); return s ? { signedIn: true, email: s.email } : { signedIn: false }; });
+  const done = (r, u) => { save({ token: r.d.token, email: r.d.user.email, username: r.d.user.username, name: r.d.user.display_name || '' }); return { ok: true, email: r.d.user.email, name: r.d.user.display_name || r.d.user.username }; };
+  ipcMain.handle('acct:state', () => { const s = load(); return s ? { signedIn: true, email: s.email, name: s.name || s.username || '' } : { signedIn: false }; });
+  // A one-time link that opens lareon.org/account already signed in. Falls back to the plain sign-in page.
+  ipcMain.handle('acct:open', async () => {
+    const s = load(); if (!s) return { url: BASE + '/account' };
+    try { const r = await api('/api/auth/handoff', { method: 'POST', body: '{}' }, s.token); if (r.status === 401) { drop(); return { url: BASE + '/account', signedOut: true }; } if (r.ok && r.d.code) return { url: BASE + '/account#hc=' + r.d.code }; } catch (_) {}
+    return { url: BASE + '/account' };
+  });
   ipcMain.handle('acct:login', async (_, u, p) => {
     try {
       const r = await api('/api/login', { method: 'POST', body: JSON.stringify({ username: String(u || ''), password: String(p || '') }) });

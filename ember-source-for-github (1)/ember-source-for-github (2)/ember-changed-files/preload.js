@@ -32,7 +32,7 @@ contextBridge.exposeInMainWorld('ember', {
   acctState: () => ipcRenderer.invoke('acct:state'),
   acctLogin: (u, p) => ipcRenderer.invoke('acct:login', u, p),
   acctCode: (u, c) => ipcRenderer.invoke('acct:code', u, c),
-  acctLogout: () => ipcRenderer.invoke('acct:logout'),
+  acctLogout: () => ipcRenderer.invoke('acct:logout'), acctOpen: () => ipcRenderer.invoke('acct:open'),
   syncPull: () => ipcRenderer.invoke('sync:pull'),
   syncPush: (d, b) => ipcRenderer.invoke('sync:push', d, b),
   pwStatus: () => ipcRenderer.invoke('pw:status'), pwList: () => ipcRenderer.invoke('pw:list'), pwFind: o => ipcRenderer.invoke('pw:find', o),

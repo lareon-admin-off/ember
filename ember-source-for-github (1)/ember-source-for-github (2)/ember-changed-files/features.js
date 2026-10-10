@@ -24,7 +24,7 @@
 #morebtn{font-size:18px;line-height:1}
 #focuspill,#calmpill{display:none;align-items:center;gap:6px;padding:0 12px;border-radius:999px;border:1px solid var(--border);font-size:12px;font-weight:600;white-space:nowrap;-webkit-app-region:no-drag;cursor:pointer;background:none;color:var(--text)}
 #focuspill.on{display:flex;border-color:var(--accent);color:var(--accent)}
-#calmpill.on{display:flex;color:#8fd3ff;border-color:#35506a}
+#calmpill.on{display:flex;height:30px;color:#9fdcff;border-color:#35506a;background:linear-gradient(180deg,rgba(143,211,255,.14),rgba(143,211,255,.05))}#top #calmpill,#top #focuspill{width:auto;color:inherit}#top #calmpill.on{color:#9fdcff}#calmpill svg{flex:none}#calmpill:hover{border-color:#5a86a8}
 #bmbar{display:none;gap:4px;padding:5px 10px;background:var(--surface);border-bottom:1px solid var(--border);overflow:hidden;white-space:nowrap}
 #bmbar.show{display:flex}
 #bmbar button{flex:none;max-width:170px;overflow:hidden;text-overflow:ellipsis;padding:4px 10px;border-radius:8px;font-size:12.5px;color:var(--text);background:none;border:0;cursor:pointer}
@@ -162,7 +162,8 @@
     document.addEventListener('play',function(e){if(e.target&&e.target.pause)stop(e.target);},true);
     document.querySelectorAll('video[autoplay],audio[autoplay]').forEach(stop);}catch(e){}})()`;
   function calmApply(w) { if (!P.calm) return; try { w.executeJavaScript(CALM_JS); } catch (_) {} }
-  const pill = document.createElement('button'); pill.id = 'calmpill'; pill.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>Calm'; pill.title = 'Calm mode is on. Click to turn it off.';
+  const CALM_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><path d="M6.6 10.6c1.8-1.7 3.6-1.7 5.4 0s3.6 1.7 5.4 0"/><path d="M6.6 14.6c1.8-1.7 3.6-1.7 5.4 0s3.6 1.7 5.4 0" opacity=".55"/></svg>';
+  const pill = document.createElement('button'); pill.id = 'calmpill'; pill.innerHTML = CALM_SVG + '<span>Calm</span>'; pill.title = 'Calm mode is on. Click to turn it off.';
   pill.onclick = () => setCalm(false);
   function setCalm(v) { P.calm = !!v; savePrefs(); pill.classList.toggle('on', P.calm); toast(P.calm ? 'Calm mode on' : 'Calm mode off'); if (P.calm) tabs.forEach(t => t.wv && calmApply(t.wv)); drawSettings(); }
 
@@ -319,7 +320,7 @@
     return out;
   }
   function applyData(d) { SYNC_KEYS.forEach(k => { if (d[k] != null) lsSet(k, d[k]); }); if (d['ember.prefs']) Object.assign(P, d['ember.prefs']); barKey = ''; drawBar(); }
-  async function refreshAcct() { try { const s = E.acctState && await E.acctState(); if (s) { acct.signedIn = !!s.signedIn; acct.email = s.email || ''; } } catch (_) {} }
+  async function refreshAcct() { try { const s = E.acctState && await E.acctState(); if (s) { acct.signedIn = !!s.signedIn; acct.email = s.email || ''; acct.name = s.name || ''; } } catch (_) {} }
   async function doSync(manual) {
     if (!E.syncPull || !acct.signedIn) return;
     acct.msg = 'Syncing…'; if (manual) drawSettings();
@@ -346,9 +347,9 @@
     if (g('acSync')) g('acSync').onclick = () => doSync(true);
     if (g('acOut')) g('acOut').onclick = async () => { await E.acctLogout(); acct = Object.assign(acct, { signedIn: false, email: '', stage: 'form', msg: '' }); drawSettings(); };
     if (g('acNew')) g('acNew').onclick = () => { ov.classList.remove('show'); newTab('https://lareon.org/account#register'); };
-    const login = async () => { acct.msg = 'Signing in…'; const r = await E.acctLogin(g('acU').value.trim(), g('acP').value); if (r.ok) { acct.signedIn = true; acct.email = r.email; acct.msg = ''; acct.stage = 'form'; drawSettings(); doSync(true); return; } if (r.needCode) { acct.stage = 'code'; acct.contact = r.contact; acct.user = r.username; acct.msg = ''; } else acct.msg = r.error || 'Could not sign in'; drawSettings(); };
+    const login = async () => { acct.msg = 'Signing in…'; const r = await E.acctLogin(g('acU').value.trim(), g('acP').value); if (r.ok) { acct.signedIn = true; acct.email = r.email; acct.name = r.name || ''; acct.msg = ''; acct.stage = 'form'; drawSettings(); doSync(true); return; } if (r.needCode) { acct.stage = 'code'; acct.contact = r.contact; acct.user = r.username; acct.msg = ''; } else acct.msg = r.error || 'Could not sign in'; drawSettings(); };
     if (g('acGo')) { g('acGo').onclick = login; g('acP').onkeydown = e => { if (e.key === 'Enter') login(); }; }
-    const code = async () => { const r = await E.acctCode(acct.user, g('acCode').value.trim()); if (r.ok) { acct.signedIn = true; acct.email = r.email; acct.msg = ''; acct.stage = 'form'; drawSettings(); doSync(true); } else { acct.msg = r.error || 'That code did not work'; drawSettings(); } };
+    const code = async () => { const r = await E.acctCode(acct.user, g('acCode').value.trim()); if (r.ok) { acct.signedIn = true; acct.email = r.email; acct.name = r.name || ''; acct.msg = ''; acct.stage = 'form'; drawSettings(); doSync(true); } else { acct.msg = r.error || 'That code did not work'; drawSettings(); } };
     if (g('acCodeGo')) { g('acCodeGo').onclick = code; g('acCode').onkeydown = e => { if (e.key === 'Enter') code(); }; }
   }
   setTimeout(() => refreshAcct().then(() => doSync(false)), 20000);
@@ -470,11 +471,25 @@
   }
   function paintSignin() {
     const b = document.getElementById('signin'); if (!b) return;
-    const star = b.querySelector('svg'); const keep = star ? star.outerHTML : '';
-    const name = String(acct.email || '').split('@')[0] || 'Lareon account';
-    b.innerHTML = keep + (acct.signedIn ? X(name) : 'Sign in with Lareon');
-    b.title = acct.signedIn ? 'Signed in as ' + acct.email + '. Open settings.' : 'Sign in to sync Ember';
+    if (!b.dataset.star) b.dataset.star = (b.querySelector('svg') || { outerHTML: '' }).outerHTML;
+    if (acct.signedIn) {
+      const nm = acct.name || String(acct.email || '').split('@')[0] || 'Lareon account';
+      const hue = Array.from(nm).reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 360, 7);
+      b.classList.add('me');
+      b.innerHTML = '<i class="avt" style="background:linear-gradient(135deg,hsl(' + hue + ' 90% 60%),hsl(' + ((hue + 50) % 360) + ' 85% 55%))">' + X(Array.from(nm)[0].toUpperCase()) + '</i><span class="nm"><b>' + X(nm) + '</b><small>Lareon account</small></span>';
+      b.title = 'Signed in as ' + acct.email + '. Open your Lareon account.';
+    } else {
+      b.classList.remove('me'); b.innerHTML = b.dataset.star + 'Sign in with Lareon'; b.title = 'Sign in to Lareon';
+    }
   }
+  const meCss = document.createElement('style');
+  meCss.textContent = '#signin.me{padding:7px 12px 7px 8px;gap:10px}#signin .avt{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:700 14px/1 inherit;font-style:normal;color:#1a1008}#signin .nm{display:flex;flex-direction:column;min-width:0;text-align:left;line-height:1.15}#signin .nm b{color:var(--text);font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#signin .nm small{font-size:11px;font-weight:500;color:var(--muted)}';
+  document.head.appendChild(meCss);
+  window.emberAccountClick = async () => {
+    let url = 'https://lareon.org/account';
+    try { const r = E.acctOpen && await E.acctOpen(); if (r && r.url) url = r.url; if (r && r.signedOut) { acct.signedIn = false; paintSignin(); } } catch (_) {}
+    newTab(url);
+  };
   refreshAcct().then(paintSignin);
   function drawSettings() {
     paintSignin();

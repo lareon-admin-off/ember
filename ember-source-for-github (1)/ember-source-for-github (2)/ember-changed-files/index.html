@@ -821,7 +821,7 @@ function render() {
 }
 $('#add').onclick = () => newTab();
 $('#addp').onclick = () => newTab('', true);
-$('#signin').onclick = () => { if (window.openEmberSettings) window.openEmberSettings(); else newTab('https://lareon.org/account'); };
+$('#signin').onclick = () => { if (window.emberAccountClick) window.emberAccountClick(); else newTab('https://lareon.org/account'); };
 $('#bar').addEventListener('keydown', e => { if (e.key === 'Enter') go(e.target.value); });
 $('#bar').addEventListener('focus', e => e.target.select());
 $('#sform').onsubmit = e => { e.preventDefault(); go($('#q').value); $('#q').value = ''; };
