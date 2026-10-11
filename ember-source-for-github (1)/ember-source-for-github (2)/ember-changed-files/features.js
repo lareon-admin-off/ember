@@ -280,7 +280,15 @@
     focus = { until: Date.now() + min * 60000, sites }; lsSet('ember.focus', focus); pushMain(); focusTick(); toast('Focus session started for ' + min + ' minutes'); drawSettings();
   }
   function endFocus() { focus.until = 0; lsSet('ember.focus', focus); pushMain(); focusTick(); toast('Focus session ended'); drawSettings(); }
-  if (E.onFocusBlocked) E.onFocusBlocked(b => toast(b.host + ' is blocked until ' + new Date(b.until).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })));
+  if (E.onFocusBlocked) E.onFocusBlocked(b => {
+  if (b.main) {
+    try {
+      const t = tabs.find(x => { try { return x.wv && x.wv.getWebContentsId() === b.wc; } catch (_) { return false; } });
+      if (t && typeof showWebError === 'function') { t.error = { code: -20, desc: 'net::ERR_BLOCKED_BY_CLIENT', url: b.url || ('https://' + b.host) }; t.loading = false; showWebError(t); render(); return; }
+    } catch (_) {}
+  }
+  toast(b.host + ' is blocked until ' + new Date(b.until).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }));
+});
   errorMessages['-20'] = ['This site is paused.', 'Focus mode is blocking it right now. You can end the session in Settings.', 'Blocked by focus session'];
   window.emberFocus = { info: () => ({ until: focus.until, sites: focus.sites.slice() }) };
   focusTick();
