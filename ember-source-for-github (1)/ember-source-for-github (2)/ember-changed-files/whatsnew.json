@@ -28,6 +28,9 @@
   ],
   "1.0.7": [
     "On Mac, Get the update now downloads the new version, checks it, and opens the installer for you.",
-    "Ember cleans up the downloaded installer the next time it starts."
+    "Ember cleans up the downloaded installer the next time it starts.",
+    "Focus mode now reliably shows its full-page screen on a paused site.",
+    "Pages no longer show a code -118 error after sitting idle; Ember quietly retries.",
+    "A new, friendlier screen when Lareon is having trouble."
   ]
 }
