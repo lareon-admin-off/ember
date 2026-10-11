@@ -122,7 +122,7 @@
       ...(t.temp ? [['Make temporary (2 hours)', () => { t.temp = Date.now() + hrs(2); render(); }]] : []),
       '-',
       ...(web ? [['Reader view', () => { select(t.id); readerView(t); }], ['Duplicate tab', () => newTab(t.url)]] : []),
-      ...(web && !t.priv && acct.signedIn ? ['-', ['Send to another device…', () => clSendMenu(t, e.clientX, e.clientY)], ['Save to reading list', () => clRead(t)], ['Email this page to me', () => clMailPage(t)], ['Add a note about this site…', () => clNoteFor(t)], ['Ask Aster about this page…', () => { select(t.id); openCloud('aster'); }], ['Save open tabs as a collection…', () => openCloud('collections')]] : []),
+      ...(web && !t.priv && acct.signedIn ? ['-', ['Send to another device…', () => clSendMenu(t, e.clientX, e.clientY)], ['Save to reading list', () => clRead(t)], ['Email this page to me', () => clMailPage(t)], ['Add a note about this site…', () => clNoteFor(t)], ['Save open tabs as a collection…', () => openCloud('collections')]] : []),
       ['Close tab', () => closeTab(t.id)]
     ], e.clientX, e.clientY);
   }, true);
@@ -349,7 +349,7 @@
   }
   function acctHtml() {
     const inp = 'style="width:100%;margin:6px 0"';
-    if (acct.signedIn) return '<div class="row1"><div>' + X(acct.email) + '<small>' + (acct.last ? 'Last synced ' + agoTxt(acct.last) + '. ' : 'Not synced yet. ') + X(acct.msg || '') + '</small></div><button class="btn1 pri" id="acSync">Sync now</button></div><div class="row1"><div>Bookmarks, pinned tabs and settings follow you<small>Some settings apply the next time Ember starts. Manage your account at lareon.org/account.</small></div><button class="btn1" id="acOut">Sign out</button></div><div class="row1"><div>Your Ember settings<small>Startup, clean links, calm mode, bookmarks bar and focus sites. Edit them on lareon.org.</small></div><button class="btn1" id="acWeb">Open</button></div><div class="row1"><div>Lareon cloud<small>Send tabs to other devices, reading list, collections, notes and Ask Aster.</small></div><button class="btn1" id="acCloud">Open</button></div><div class="row1"><div>Share my open tabs<small>Lets your other devices see which pages are open here. Off by default, never includes private tabs.</small></div>' + swc(shareOn()) + '</div>';
+    if (acct.signedIn) return '<div class="row1"><div>' + X(acct.email) + '<small>' + (acct.last ? 'Last synced ' + agoTxt(acct.last) + '. ' : 'Not synced yet. ') + X(acct.msg || '') + '</small></div><button class="btn1 pri" id="acSync">Sync now</button></div><div class="row1"><div>Bookmarks, pinned tabs and settings follow you<small>Some settings apply the next time Ember starts. Manage your account at lareon.org/account.</small></div><button class="btn1" id="acOut">Sign out</button></div><div class="row1"><div>Your Ember settings<small>Startup, clean links, calm mode, bookmarks bar and focus sites. Edit them on lareon.org.</small></div><button class="btn1" id="acWeb">Open</button></div><div class="row1"><div>Lareon cloud<small>Send tabs to other devices, reading list, collections, and notes.</small></div><button class="btn1" id="acCloud">Open</button></div><div class="row1"><div>Share my open tabs<small>Lets your other devices see which pages are open here. Off by default, never includes private tabs.</small></div>' + swc(shareOn()) + '</div>';
     if (acct.stage === 'code') return '<p>We sent a code to ' + X(acct.contact) + '.</p><input id="acCode" ' + inp + ' placeholder="6-digit code" maxlength="6" autocomplete="one-time-code"><div class="sp-acts"><button class="btn1 pri" id="acCodeGo">Confirm</button></div><p>' + X(acct.msg) + '</p>';
     return '<p>Sign in with your Lareon account to sync bookmarks, pinned tabs and settings across your devices.</p><input id="acU" ' + inp + ' placeholder="Username" autocomplete="username" spellcheck="false"><input id="acP" ' + inp + ' type="password" placeholder="Password" autocomplete="current-password"><div class="sp-acts"><button class="btn1 pri" id="acGo">Sign in</button><button class="btn1" id="acNew">Create a Lareon account</button></div><p>' + X(acct.msg) + '</p>';
   }
@@ -581,12 +581,13 @@
   async function clMail() {
     const b = $('#mailbtn'); if (!b) return;
     let n = 0;
-    if (acct.signedIn) { const r = await cl('GET', '/api/account/summary'); if (clOk(r)) n = +r.d.unread || 0; }
+    if (acct.signedIn) { const r = await cl('GET', '/api/account/summary'); if (clOk(r)) { n = +r.d.unread || 0; if (clLastMail != null && n > clLastMail) toast('New mail in Fledge'); clLastMail = n; } }
     let i = b.querySelector('.mbadge');
     if (!n) { if (i) i.remove(); return; }
     if (!i) { i = document.createElement('i'); i.className = 'mbadge'; b.appendChild(i); }
     i.textContent = n > 99 ? '99+' : String(n);
   }
+  let clLastMail = null;
   async function clSendTab(t, to) {
     if (!isWebTab(t)) return toast('Open a web page first');
     await clDevice();
@@ -619,9 +620,8 @@
   });
   lpbtn.onclick = () => openCloud();
   const CL_PATH = { devices: '/api/ember/devices', reading: '/api/ember/reading', collections: '/api/ember/collections', notes: '/api/ember/notes' };
-  const CL_TABS = [['devices', 'Devices'], ['reading', 'Reading list'], ['collections', 'Collections'], ['notes', 'Notes'], ['aster', 'Ask Aster']];
+  const CL_TABS = [['devices', 'Devices'], ['reading', 'Reading list'], ['collections', 'Collections'], ['notes', 'Notes']];
   async function clLoad(tab) {
-    if (tab === 'aster') return drawCloud();
     CL.err = '';
     if (tab === 'devices') await clDevice();
     const r = await cl('GET', CL_PATH[tab]);
@@ -637,7 +637,7 @@
   function clBody(tab) {
     const L = CL.d[tab], me = CL.dev && CL.dev.id, t = cur(), web = isWebTab(t);
     const empty = m => '<p style="opacity:.7">' + m + '</p>';
-    if (tab !== 'aster' && !L) return CL.err ? '' : empty('Loading…');
+    if (!L) return CL.err ? '' : empty('Loading…');
     let h = '';
     if (tab === 'devices') {
       const others = L.filter(d => d.id !== me);
@@ -646,7 +646,7 @@
       h += L.map(d => { const mine = d.id === me, ago = clAgo(d.updated_at); return '<div class="row1"><div>' + X(d.name) + (mine ? ' (this device)' : '') + '<small>' + X(d.platform || '') + (ago ? ' · active ' + X(ago) : '') + '</small>' + (d.tabs || []).slice(0, 8).map(x => '<button class="lpl" data-a="open" data-u="' + XA(x.u) + '">' + X(x.t || x.u) + '</button>').join('') + '</div>' + (mine ? '' : (web ? '<button class="btn1" data-a="send" data-id="' + XA(d.id) + '">Send page</button>' : '') + '<button class="btn1 danger" data-a="forget" data-id="' + XA(d.id) + '">Forget</button>') + '</div>'; }).join('');
       if (!others.length) h += empty('Sign in to Ember on another computer with this account and it will show up here.');
     } else if (tab === 'reading') {
-      h += '<div class="row1"><div>Save this page for later<small>' + (web ? X(t.title || hostOf(t.url)) : 'Open a web page first') + '</small></div>' + (web ? '<button class="btn1 pri" data-a="radd">Save</button>' : '') + '</div>';
+      h += '<div class="row1"><div>Save this page for later<small>' + (web ? X(t.title || hostOf(t.url)) : 'Open a web page first') + '</small></div>' + (web ? '<button class="btn1 pri" data-a="radd">Save</button>' : '') + '</div><div class="row1"><div>Save all open tabs<small>Up to 20 pages, private tabs left out</small></div><button class="btn1" data-a="raddall">Save all</button></div>';
       const items = L.slice().sort((a, b) => (a.read ? 1 : 0) - (b.read ? 1 : 0));
       h += items.map(i => '<div class="row1"><div style="opacity:' + (i.read ? '.6' : '1') + '">' + X(i.title || i.url) + '<button class="lpl" data-a="ropen" data-id="' + XA(i.id) + '" data-u="' + XA(i.url) + '">' + X(hostOf(i.url)) + '</button></div><button class="btn1" data-a="rread" data-id="' + XA(i.id) + '" data-r="' + (i.read ? '0' : '1') + '">' + (i.read ? 'Mark unread' : 'Mark read') + '</button><button class="btn1 danger" data-a="rdel" data-id="' + XA(i.id) + '">Remove</button></div>').join('');
       if (!items.length) h += empty('Nothing saved yet. Right-click a tab and choose Save to reading list.');
@@ -659,27 +659,14 @@
       const host = CL.noteHost != null ? CL.noteHost : (web ? hostOf(t.url) : '');
       h += '<div style="margin:8px 0"><input type="text" id="lpNt" maxlength="100" placeholder="Title (optional)"><textarea id="lpNb" maxlength="20000" placeholder="Write a note…"></textarea><label style="font-size:12.5px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="lpNh" data-host="' + XA(host) + '"' + (host ? ' checked' : ' disabled') + '> Attach to ' + X(host || 'a site (open one first)') + '</label><div class="sp-acts"><button class="btn1 pri" data-a="nadd">Save note</button></div></div>';
       const items = L.slice().sort((a, b) => ((b.host && b.host === host) ? 1 : 0) - ((a.host && a.host === host) ? 1 : 0));
-      h += items.map(n => '<div class="row1"><div>' + X(n.title || 'Note') + (n.host ? ' <small style="display:inline">· ' + X(n.host) + '</small>' : '') + '<small style="white-space:pre-wrap">' + X(String(n.body || '').slice(0, 300)) + '</small></div><button class="btn1" data-a="nedit" data-id="' + XA(n.id) + '">Edit</button><button class="btn1 danger" data-a="ndel" data-id="' + XA(n.id) + '">Delete</button></div>').join('');
+      h += items.map(n => '<div class="row1"><div>' + X(n.title || 'Note') + (n.host ? ' <small style="display:inline">· ' + X(n.host) + '</small>' : '') + '<small style="white-space:pre-wrap">' + X(String(n.body || '').slice(0, 300)) + '</small></div><button class="btn1" data-a="ncopy" data-id="' + XA(n.id) + '">Copy</button><button class="btn1" data-a="nedit" data-id="' + XA(n.id) + '">Edit</button><button class="btn1 danger" data-a="ndel" data-id="' + XA(n.id) + '">Delete</button></div>').join('');
       if (!items.length) h += empty('Notes you write here follow you to every device.');
-    } else {
-      h += '<p style="opacity:.8">Ask Aster about the page you are on, or have it summarized. The page text is sent to Aster only when you press a button here.</p><input type="text" id="lpQ" placeholder="Ask a question…"><label style="font-size:12.5px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="lpPg"' + (web ? ' checked' : ' disabled') + '> Include this page (' + X(web ? hostOf(t.url) : 'none open') + ')</label><div class="sp-acts"><button class="btn1 pri" data-a="ask">Ask Aster</button><button class="btn1" data-a="sum"' + (web ? '' : ' disabled') + '>Summarize this page</button></div><div id="lpAns">' + X(CL.ans) + '</div>';
     }
     return h;
   }
   function drawCloud() {
     if (!lp.classList.contains('show')) return;
     lp.innerHTML = '<div class="card1"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:16px">Lareon cloud</b><button class="btn1" data-a="x">Close</button></div><div class="lpts">' + CL_TABS.map(([k, n]) => '<button class="lpt' + (k === CL.tab ? ' on' : '') + '" data-lt="' + k + '">' + n + '</button>').join('') + '</div>' + (CL.err ? '<p class="lperr">' + X(CL.err) + '</p>' : '') + clBody(CL.tab) + '</div>';
-  }
-  async function clAster(kind) {
-    const t = cur(), out = $('#lpAns'); let msg = ($('#lpQ').value || '').trim(), page = null;
-    if (kind === 'sum') msg = 'Summarize this page in a few short bullet points, then tell me the one thing worth remembering.';
-    if (!msg) return toast('Type a question first');
-    const inc = kind === 'sum' || ($('#lpPg') && $('#lpPg').checked);
-    if (inc && isWebTab(t)) { try { const txt = await t.wv.executeJavaScript('(document.body&&document.body.innerText)||""'); page = { title: t.title || '', url: t.url, text: String(txt).slice(0, 12000) }; } catch (_) {} }
-    CL.ans = 'Aster is thinking…'; if (out) out.textContent = CL.ans;
-    let r; try { r = await E.emAster({ message: msg, page }); } catch (_) { r = { error: 'Could not reach Aster.' }; }
-    CL.ans = r && r.reply ? r.reply : ((r && r.error === 'signed-out') ? 'Sign in with your Lareon account first.' : (r && r.error) || 'Aster could not answer. Try again.');
-    const o2 = $('#lpAns'); if (o2) o2.textContent = CL.ans;
   }
   lp.addEventListener('click', async e => {
     if (e.target.closest('[data-cs]')) { lsSet('ember.shareTabs', !shareOn()); await clDevice(); drawCloud(); clLoad('devices'); return; }
@@ -701,7 +688,8 @@
     if (a === 'nadd') { const body = ($('#lpNb').value || '').trim(), title = ($('#lpNt').value || '').trim(), hb = $('#lpNh'); if (!body && !title) return toast('Write something first'); const r = await cl('POST', '/api/ember/notes', { id: CL.edit || undefined, title, body, host: hb && hb.checked ? hb.dataset.host : '' }); CL.edit = null; return done(r, 'Note saved', 'notes'); }
     if (a === 'nedit') { const n = (CL.d.notes || []).find(x => x.id === id); if (!n) return; CL.edit = id; $('#lpNt').value = n.title || ''; $('#lpNb').value = n.body || ''; $('#lpNb').focus(); return; }
     if (a === 'ndel') return done(await cl('DELETE', '/api/ember/notes/' + enc), '', 'notes');
-    if (a === 'ask' || a === 'sum') return clAster(a);
+    if (a === 'raddall') { const l = clWebTabs().slice(0, 20); let k = 0; for (const x of l) { const r = await cl('POST', '/api/ember/reading', { url: x.u, title: x.t }); if (clOk(r)) k++; } toast('Saved ' + k + ' page' + (k === 1 ? '' : 's') + ' to your reading list'); return clLoad('reading'); }
+    if (a === 'ncopy') { const n = (CL.d.notes || []).find(x => x.id === id); if (n) { try { await navigator.clipboard.writeText((n.title ? n.title + '\n' : '') + (n.body || '')); toast('Note copied'); } catch (_) { toast('Could not copy'); } } return; }
   });
   let clOn = false, clTimers = [];
   function clSync() {
@@ -711,11 +699,20 @@
       setTimeout(async () => { await clDevice(); clInbox(); clMail(); }, 1500);
       clTimers = [setInterval(clDevice, 60000), setInterval(clInbox, 30000), setInterval(clMail, 120000)];
     } else if (!acct.signedIn && clOn) {
-      clOn = false; clTimers.forEach(clearInterval); clTimers = []; clQueue = []; clBarDraw(); lp.classList.remove('show'); CL.d = {}; CL.dev = null; clMail();
+      clOn = false; clTimers.forEach(clearInterval); clTimers = []; clQueue = []; clBarDraw(); lp.classList.remove('show'); CL.d = {}; CL.dev = null; CL.nc = null; clLastMail = null; clMail();
     }
   }
   const _ps = paintSignin; paintSignin = function () { _ps(); clSync(); };
   setTimeout(clSync, 9000);
+  let clHost = '', clNoted = {};
+  setInterval(async () => {
+    if (!acct.signedIn) return;
+    const t = cur(), h = isWebTab(t) ? hostOf(t.url) : '';
+    if (!h || h === clHost) return; clHost = h;
+    if (!CL.nc || Date.now() - CL.nct > 300000) { const r = await cl('GET', '/api/ember/notes'); if (clOk(r)) { CL.nc = r.d.items || []; CL.nct = Date.now(); CL.d.notes = CL.nc; } }
+    const n = (CL.nc || []).filter(x => x.host === h).length;
+    if (n && !clNoted[h]) { clNoted[h] = 1; toast('You have ' + (n === 1 ? 'a note' : n + ' notes') + ' about ' + h + '. Press Ctrl+Shift+L, then Notes.'); }
+  }, 3000);
   function drawSettings() {
     paintSignin();
     if (!ov.classList.contains('show')) return;
