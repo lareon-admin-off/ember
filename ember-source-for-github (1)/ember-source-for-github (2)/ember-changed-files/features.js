@@ -122,6 +122,7 @@
       ...(t.temp ? [['Make temporary (2 hours)', () => { t.temp = Date.now() + hrs(2); render(); }]] : []),
       '-',
       ...(web ? [['Reader view', () => { select(t.id); readerView(t); }], ['Duplicate tab', () => newTab(t.url)]] : []),
+      ...(web && !t.priv && acct.signedIn ? ['-', ['Send to another device…', () => clSendMenu(t, e.clientX, e.clientY)], ['Save to reading list', () => clRead(t)], ['Email this page to me', () => clMailPage(t)], ['Add a note about this site…', () => clNoteFor(t)], ['Ask Aster about this page…', () => { select(t.id); openCloud('aster'); }], ['Save open tabs as a collection…', () => openCloud('collections')]] : []),
       ['Close tab', () => closeTab(t.id)]
     ], e.clientX, e.clientY);
   }, true);
@@ -318,7 +319,7 @@
   /* ---------- Lareon account + sync ---------- */
   let acct = { signedIn: false, email: '', stage: 'form', msg: '', contact: '', user: '', last: lsGet('ember.sync.at', 0) };
   const SYNC_KEYS = ['ember.bookmarks', 'ember.pinned', 'ember.prefs', 'ember.dock', 'ember.zoom'];
-  const collect = () => { const o = {}; SYNC_KEYS.forEach(k => { const v = lsGet(k, null); if (v != null) o[k] = v; }); return o; };
+  const collect = () => { const o = {}; SYNC_KEYS.forEach(k => { const v = lsGet(k, null); if (v != null) o[k] = v; }); o['ember.focussites'] = focus.sites.slice(0, 40); return o; };
   const agoTxt = t => { const s = (Date.now() - t) / 1000; return s < 90 ? 'just now' : s < 3600 ? Math.round(s / 60) + ' min ago' : s < 86400 ? Math.round(s / 3600) + ' h ago' : Math.round(s / 86400) + ' d ago'; };
   function mergeData(local, remote, rv, lv) {
     const out = Object.assign({}, local);
@@ -326,9 +327,10 @@
     out['ember.bookmarks'] = uniq(local['ember.bookmarks'] || [], remote['ember.bookmarks'] || [], 'u');
     out['ember.pinned'] = uniq(local['ember.pinned'] || [], remote['ember.pinned'] || [], null);
     if (rv !== lv) ['ember.prefs', 'ember.dock', 'ember.zoom'].forEach(k => { if (remote[k] != null) out[k] = Object.assign({}, local[k] || {}, remote[k]); }); // another device changed these since we last synced
+    if (rv !== lv && Array.isArray(remote['ember.focussites'])) out['ember.focussites'] = remote['ember.focussites'];
     return out;
   }
-  function applyData(d) { SYNC_KEYS.forEach(k => { if (d[k] != null) lsSet(k, d[k]); }); if (d['ember.prefs']) Object.assign(P, d['ember.prefs']); barKey = ''; drawBar(); }
+  function applyData(d) { SYNC_KEYS.forEach(k => { if (d[k] != null) lsSet(k, d[k]); }); if (d['ember.prefs']) Object.assign(P, d['ember.prefs']); if (Array.isArray(d['ember.focussites']) && focus.until <= Date.now()) { focus.sites = d['ember.focussites'].map(String).slice(0, 40); lsSet('ember.focus', focus); } barKey = ''; drawBar(); }
   async function refreshAcct() { try { const s = E.acctState && await E.acctState(); if (s) { acct.signedIn = !!s.signedIn; acct.email = s.email || ''; acct.name = s.name || ''; } } catch (_) {} }
   async function doSync(manual) {
     if (!E.syncPull || !acct.signedIn) return;
@@ -347,13 +349,16 @@
   }
   function acctHtml() {
     const inp = 'style="width:100%;margin:6px 0"';
-    if (acct.signedIn) return '<div class="row1"><div>' + X(acct.email) + '<small>' + (acct.last ? 'Last synced ' + agoTxt(acct.last) + '. ' : 'Not synced yet. ') + X(acct.msg || '') + '</small></div><button class="btn1 pri" id="acSync">Sync now</button></div><div class="row1"><div>Bookmarks, pinned tabs and settings follow you<small>Some settings apply the next time Ember starts. Manage your account at lareon.org/account.</small></div><button class="btn1" id="acOut">Sign out</button></div>';
+    if (acct.signedIn) return '<div class="row1"><div>' + X(acct.email) + '<small>' + (acct.last ? 'Last synced ' + agoTxt(acct.last) + '. ' : 'Not synced yet. ') + X(acct.msg || '') + '</small></div><button class="btn1 pri" id="acSync">Sync now</button></div><div class="row1"><div>Bookmarks, pinned tabs and settings follow you<small>Some settings apply the next time Ember starts. Manage your account at lareon.org/account.</small></div><button class="btn1" id="acOut">Sign out</button></div><div class="row1"><div>Your Ember settings<small>Startup, clean links, calm mode, bookmarks bar and focus sites. Edit them on lareon.org.</small></div><button class="btn1" id="acWeb">Open</button></div><div class="row1"><div>Lareon cloud<small>Send tabs to other devices, reading list, collections, notes and Ask Aster.</small></div><button class="btn1" id="acCloud">Open</button></div><div class="row1"><div>Share my open tabs<small>Lets your other devices see which pages are open here. Off by default, never includes private tabs.</small></div>' + swc(shareOn()) + '</div>';
     if (acct.stage === 'code') return '<p>We sent a code to ' + X(acct.contact) + '.</p><input id="acCode" ' + inp + ' placeholder="6-digit code" maxlength="6" autocomplete="one-time-code"><div class="sp-acts"><button class="btn1 pri" id="acCodeGo">Confirm</button></div><p>' + X(acct.msg) + '</p>';
     return '<p>Sign in with your Lareon account to sync bookmarks, pinned tabs and settings across your devices.</p><input id="acU" ' + inp + ' placeholder="Username" autocomplete="username" spellcheck="false"><input id="acP" ' + inp + ' type="password" placeholder="Password" autocomplete="current-password"><div class="sp-acts"><button class="btn1 pri" id="acGo">Sign in</button><button class="btn1" id="acNew">Create a Lareon account</button></div><p>' + X(acct.msg) + '</p>';
   }
   function acctWire() {
     const g = id => $('#' + id);
     if (g('acSync')) g('acSync').onclick = () => doSync(true);
+    if (g('acWeb')) g('acWeb').onclick = () => { ov.classList.remove('show'); window.emberAccountClick('ember'); };
+    if (g('acCloud')) g('acCloud').onclick = () => { ov.classList.remove('show'); openCloud(); };
+    ov.querySelectorAll('[data-cs]').forEach(b => b.onclick = async () => { lsSet('ember.shareTabs', !shareOn()); await clDevice(); drawSettings(); });
     if (g('acOut')) g('acOut').onclick = async () => { try { await E.acctLogout(); } catch (_) {} acct = Object.assign(acct, { signedIn: false, email: '', name: '', pending: null, stage: 'form', msg: '' }); drawSettings(); toast('Signed out of Lareon'); };
     if (g('acNew')) g('acNew').onclick = () => { ov.classList.remove('show'); newTab('https://lareon.org/account#register'); };
     const login = async () => { acct.msg = 'Signing in…'; const r = await E.acctLogin(g('acU').value.trim(), g('acP').value); if (r.ok) { acct.signedIn = true; acct.email = r.email; acct.name = r.name || ''; acct.msg = ''; acct.stage = 'form'; drawSettings(); doSync(true); return; } if (r.needCode) { acct.stage = 'code'; acct.contact = r.contact; acct.user = r.username; acct.msg = ''; } else acct.msg = r.error || 'Could not sign in'; drawSettings(); };
@@ -497,7 +502,7 @@
   const meCss = document.createElement('style');
   meCss.textContent = '#signin.me{padding:7px 12px 7px 8px;gap:10px}#signin .avt{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:700 14px/1 inherit;font-style:normal;color:#1a1008}#signin .nm{display:flex;flex-direction:column;min-width:0;text-align:left;line-height:1.15}#signin .nm b{color:var(--text);font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#signin .nm small{font-size:11px;font-weight:500;color:var(--muted)}';
   document.head.appendChild(meCss);
-  window.emberAccountClick = async () => {
+  window.emberAccountClick = async (go) => {
     if (!acct.signedIn) {
       let r = null; try { r = E.acctLink && await E.acctLink(); } catch (_) {}
       newTab((r && r.url) || 'https://lareon.org/account');
@@ -506,6 +511,7 @@
     }
     let url = 'https://lareon.org/account';
     try { const r = E.acctOpen && await E.acctOpen(); if (r && r.url) url = r.url; if (r && r.signedOut) { acct.signedIn = false; paintSignin(); } } catch (_) {}
+    if (typeof go === 'string' && /^[a-z]+$/.test(go)) url += (url.indexOf('#') < 0 ? '#' : '&') + 'go=' + go;
     newTab(url);
   };
   try { E.onAcctLinked && E.onAcctLinked(d => { acct.pending = null; acct.signedIn = true; acct.email = d.email || ''; acct.name = d.name || ''; acct.msg = ''; paintSignin(); toast('Signed in as ' + (d.name || d.email)); drawSettings(); doSync(false); }); } catch (_) {}
@@ -523,6 +529,193 @@
   setInterval(checkAcct, 45000);
   window.addEventListener('focus', checkAcct);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) checkAcct(); });
+  /* ---------- Lareon cloud (1.1) ---------- */
+  const XA = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const CL = { dev: null, tab: 'devices', d: {}, err: '', shown: {}, noteHost: null, edit: null, ans: '' };
+  const shareOn = () => !!lsGet('ember.shareTabs', false);
+  const swc = on => '<button class="sw' + (on ? ' on' : '') + '" data-cs="share" role="switch" aria-checked="' + !!on + '"></button>';
+  const cl = async (method, path, body) => {
+    if (!E.emCall || !acct.signedIn) return { error: 'signed-out' };
+    let r; try { r = await E.emCall(method, path, body); } catch (_) { return { error: 'offline' }; }
+    r = r || { error: 'offline' };
+    if (r.error === 'signed-out' && acct.signedIn) { acct.signedIn = false; acct.msg = 'You were signed out. Sign in again.'; paintSignin(); drawSettings(); }
+    return r;
+  };
+  const clOk = r => !!(r && r.ok && r.d);
+  const clMsg = r => (r && r.d && r.d.error) || (r && r.error === 'offline' ? 'Could not reach Lareon. Check your connection.' : (r && r.error === 'signed-out' ? 'Sign in with your Lareon account first.' : 'Something went wrong. Try again.'));
+  const clAgo = s => { const n = Date.parse(s); return n ? agoTxt(n) : ''; };
+  const clWebTabs = () => tabs.filter(t => isWebTab(t) && !t.priv).map(t => ({ u: t.url, t: t.title || hostOf(t.url) }));
+  async function clDevice() {
+    if (!acct.signedIn || !E.emCall) return;
+    if (!CL.dev) { try { CL.dev = await E.emDevice(); } catch (_) {} }
+    if (!CL.dev || !CL.dev.id) return;
+    await cl('PUT', '/api/ember/device', { id: CL.dev.id, name: CL.dev.name, platform: CL.dev.platform, tabs: shareOn() ? clWebTabs() : [] });
+  }
+  const clCss = document.createElement('style');
+  clCss.textContent = '#lpbtn{display:none}#lpbtn.show{display:inline-flex;align-items:center;justify-content:center}#mailbtn{position:relative}.mbadge{position:absolute;top:-3px;right:-4px;min-width:15px;height:15px;padding:0 4px;border-radius:8px;background:#e5484d;color:#fff;font-size:10px;font-weight:700;line-height:15px;font-style:normal;text-align:center;box-sizing:border-box;pointer-events:none}'
+    + '#clbar{display:none;align-items:center;gap:10px;padding:7px 12px;background:var(--surface);border-bottom:1px solid var(--border);font-size:13px;color:var(--text);-webkit-app-region:no-drag}#clbar.show{display:flex}#clbar span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#clbar .btn1{padding:5px 12px;font-size:12.5px}'
+    + '.lpts{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}.lpt{padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:12.5px;cursor:pointer}.lpt.on{background:var(--accent);color:#fff;border-color:transparent}'
+    + '#lpanel .card1{max-height:82vh;overflow:auto;width:min(620px,92vw)}#lpanel input[type=text],#lpanel textarea{width:100%;box-sizing:border-box;margin:6px 0;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px}#lpanel textarea{min-height:90px;resize:vertical}'
+    + '.lperr{color:#e5484d}.lpl{display:block;margin:2px 0 0;font-size:12px;opacity:.65;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:380px;cursor:pointer;background:none;border:0;padding:0;text-align:left;color:inherit}.lpl:hover{opacity:1;text-decoration:underline}#lpAns{white-space:pre-wrap;font-size:13.5px;line-height:1.5;margin-top:10px}';
+  document.head.appendChild(clCss);
+  const lpbtn = document.createElement('button'); lpbtn.id = 'lpbtn'; lpbtn.className = mailBtn.className; lpbtn.title = 'Lareon cloud (Ctrl+Shift+L)'; lpbtn.setAttribute('aria-label', 'Lareon cloud');
+  lpbtn.innerHTML = '<svg width="18" height="18" viewBox="20 22 110 110"><defs><linearGradient id="lpg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff7c1f"/><stop offset="1" stop-color="#c84bff"/></linearGradient></defs><path d="M75 28 Q55 45 55 70 Q40 65 25 75 Q42 80 53 90 Q45 105 48 122 Q60 110 68 95 Q70 112 75 128 Q80 112 82 95 Q90 110 102 122 Q105 105 97 90 Q108 80 125 75 Q110 65 95 70 Q95 45 75 28Z" fill="url(#lpg)"/></svg>';
+  more.insertAdjacentElement('beforebegin', lpbtn);
+  const clbar = document.createElement('div'); clbar.id = 'clbar'; pwbar.insertAdjacentElement('afterend', clbar);
+  let clQueue = [];
+  function clBarDraw() {
+    const it = clQueue[0];
+    if (!it) { clbar.classList.remove('show'); clbar.innerHTML = ''; return; }
+    clbar.innerHTML = '<span><b>' + X(it.from_name || 'Another device') + '</b> sent you ' + X(it.title || hostOf(it.url) || 'a page') + (clQueue.length > 1 ? ' (+' + (clQueue.length - 1) + ' more)' : '') + '</span><button class="btn1 pri" id="clOpen">Open</button><button class="btn1" id="clNo">Dismiss</button>';
+    clbar.classList.add('show');
+    $('#clOpen').onclick = () => { const i = clQueue.shift(); newTab(i.url); cl('POST', '/api/ember/inbox/seen', { ids: [i.id] }); clBarDraw(); };
+    $('#clNo').onclick = () => { const ids = clQueue.map(x => x.id); clQueue = []; cl('POST', '/api/ember/inbox/seen', { ids }); clBarDraw(); };
+  }
+  async function clInbox() {
+    if (!acct.signedIn || !CL.dev) return;
+    const r = await cl('GET', '/api/ember/inbox?device=' + encodeURIComponent(CL.dev.id));
+    if (!clOk(r) || !Array.isArray(r.d.items)) return;
+    r.d.items.forEach(i => { if (!CL.shown[i.id]) { CL.shown[i.id] = 1; clQueue.push(i); } });
+    clBarDraw();
+  }
+  async function clMail() {
+    const b = $('#mailbtn'); if (!b) return;
+    let n = 0;
+    if (acct.signedIn) { const r = await cl('GET', '/api/account/summary'); if (clOk(r)) n = +r.d.unread || 0; }
+    let i = b.querySelector('.mbadge');
+    if (!n) { if (i) i.remove(); return; }
+    if (!i) { i = document.createElement('i'); i.className = 'mbadge'; b.appendChild(i); }
+    i.textContent = n > 99 ? '99+' : String(n);
+  }
+  async function clSendTab(t, to) {
+    if (!isWebTab(t)) return toast('Open a web page first');
+    await clDevice();
+    const r = await cl('POST', '/api/ember/send', { from: CL.dev && CL.dev.id, to: to || 'all', url: t.url, title: t.title || '' });
+    toast(clOk(r) ? 'Sent. It will show up on your other device within a minute.' : clMsg(r));
+  }
+  async function clSendMenu(t, x, y) {
+    await clDevice();
+    const r = await cl('GET', '/api/ember/devices');
+    const list = clOk(r) ? (r.d.devices || []).filter(d => !CL.dev || d.id !== CL.dev.id) : [];
+    if (!list.length) return toast(clOk(r) ? 'No other devices yet. Sign in to Ember on another computer first.' : clMsg(r));
+    showMenu(menu('sendmenu'), list.map(d => [d.name, () => clSendTab(t, d.id)]).concat(list.length > 1 ? ['-', ['All devices', () => clSendTab(t, 'all')]] : []), x, y);
+  }
+  async function clRead(t) {
+    if (!isWebTab(t)) return toast('Open a web page first');
+    const r = await cl('POST', '/api/ember/reading', { url: t.url, title: t.title || '' });
+    toast(clOk(r) ? 'Saved to your reading list' : clMsg(r));
+  }
+  async function clMailPage(t) {
+    if (!isWebTab(t)) return toast('Open a web page first');
+    const r = await cl('POST', '/api/ember/mail', { url: t.url, title: t.title || '' });
+    toast(clOk(r) ? 'Emailed to your Fledge inbox' : clMsg(r));
+  }
+  function clNoteFor(t) { CL.noteHost = isWebTab(t) ? hostOf(t.url) : ''; openCloud('notes', true); }
+  const lp = document.createElement('div'); lp.className = 'ovl'; lp.id = 'lpanel'; document.body.appendChild(lp);
+  lp.addEventListener('mousedown', e => { if (e.target === lp) lp.classList.remove('show'); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && lp.classList.contains('show')) lp.classList.remove('show');
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'L' || e.key === 'l')) { e.preventDefault(); openCloud(); }
+  });
+  lpbtn.onclick = () => openCloud();
+  const CL_PATH = { devices: '/api/ember/devices', reading: '/api/ember/reading', collections: '/api/ember/collections', notes: '/api/ember/notes' };
+  const CL_TABS = [['devices', 'Devices'], ['reading', 'Reading list'], ['collections', 'Collections'], ['notes', 'Notes'], ['aster', 'Ask Aster']];
+  async function clLoad(tab) {
+    if (tab === 'aster') return drawCloud();
+    CL.err = '';
+    if (tab === 'devices') await clDevice();
+    const r = await cl('GET', CL_PATH[tab]);
+    if (clOk(r)) CL.d[tab] = (tab === 'devices' ? r.d.devices : r.d.items) || []; else CL.err = clMsg(r);
+    if (CL.tab === tab) drawCloud();
+  }
+  function openCloud(tab, keepHost) {
+    if (!acct.signedIn) { toast('Sign in with your Lareon account first'); openSettings(); return; }
+    if (!keepHost) CL.noteHost = null;
+    if (tab) CL.tab = tab;
+    lp.classList.add('show'); drawCloud(); clLoad(CL.tab);
+  }
+  function clBody(tab) {
+    const L = CL.d[tab], me = CL.dev && CL.dev.id, t = cur(), web = isWebTab(t);
+    const empty = m => '<p style="opacity:.7">' + m + '</p>';
+    if (tab !== 'aster' && !L) return CL.err ? '' : empty('Loading…');
+    let h = '';
+    if (tab === 'devices') {
+      const others = L.filter(d => d.id !== me);
+      h += '<div class="row1"><div>Share my open tabs<small>Lets your other devices see which pages are open here. Off unless you turn it on. Private tabs are never shared.</small></div>' + swc(shareOn()) + '</div>';
+      h += '<div class="row1"><div>Send this page<small>' + (web ? X(t.title || hostOf(t.url)) : 'Open a web page first') + '</small></div>' + (web && others.length ? '<button class="btn1 pri" data-a="send" data-id="all">To all devices</button>' : '') + '</div>';
+      h += L.map(d => { const mine = d.id === me, ago = clAgo(d.updated_at); return '<div class="row1"><div>' + X(d.name) + (mine ? ' (this device)' : '') + '<small>' + X(d.platform || '') + (ago ? ' · active ' + X(ago) : '') + '</small>' + (d.tabs || []).slice(0, 8).map(x => '<button class="lpl" data-a="open" data-u="' + XA(x.u) + '">' + X(x.t || x.u) + '</button>').join('') + '</div>' + (mine ? '' : (web ? '<button class="btn1" data-a="send" data-id="' + XA(d.id) + '">Send page</button>' : '') + '<button class="btn1 danger" data-a="forget" data-id="' + XA(d.id) + '">Forget</button>') + '</div>'; }).join('');
+      if (!others.length) h += empty('Sign in to Ember on another computer with this account and it will show up here.');
+    } else if (tab === 'reading') {
+      h += '<div class="row1"><div>Save this page for later<small>' + (web ? X(t.title || hostOf(t.url)) : 'Open a web page first') + '</small></div>' + (web ? '<button class="btn1 pri" data-a="radd">Save</button>' : '') + '</div>';
+      const items = L.slice().sort((a, b) => (a.read ? 1 : 0) - (b.read ? 1 : 0));
+      h += items.map(i => '<div class="row1"><div style="opacity:' + (i.read ? '.6' : '1') + '">' + X(i.title || i.url) + '<button class="lpl" data-a="ropen" data-id="' + XA(i.id) + '" data-u="' + XA(i.url) + '">' + X(hostOf(i.url)) + '</button></div><button class="btn1" data-a="rread" data-id="' + XA(i.id) + '" data-r="' + (i.read ? '0' : '1') + '">' + (i.read ? 'Mark unread' : 'Mark read') + '</button><button class="btn1 danger" data-a="rdel" data-id="' + XA(i.id) + '">Remove</button></div>').join('');
+      if (!items.length) h += empty('Nothing saved yet. Right-click a tab and choose Save to reading list.');
+    } else if (tab === 'collections') {
+      const n = clWebTabs().length;
+      h += '<div class="row1" style="flex-wrap:wrap"><div style="flex:1;min-width:200px">Save your open tabs<small>' + n + ' page' + (n === 1 ? '' : 's') + ' open (private tabs left out)</small><input type="text" id="lpCn" maxlength="60" placeholder="Name, for example Trip planning"></div><button class="btn1 pri" data-a="cadd">Save</button></div>';
+      h += L.map(c => '<div class="row1"><div>' + X(c.name) + '<small>' + (c.tabs || []).length + ' pages · ' + X(clAgo(c.updated_at)) + '</small></div><button class="btn1 pri" data-a="copen" data-id="' + XA(c.id) + '">Open all</button><button class="btn1 danger" data-a="cdel" data-id="' + XA(c.id) + '">Delete</button></div>').join('');
+      if (!L.length) h += empty('Group the pages for a project, a trip or a topic, then open them all again on any device.');
+    } else if (tab === 'notes') {
+      const host = CL.noteHost != null ? CL.noteHost : (web ? hostOf(t.url) : '');
+      h += '<div style="margin:8px 0"><input type="text" id="lpNt" maxlength="100" placeholder="Title (optional)"><textarea id="lpNb" maxlength="20000" placeholder="Write a note…"></textarea><label style="font-size:12.5px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="lpNh" data-host="' + XA(host) + '"' + (host ? ' checked' : ' disabled') + '> Attach to ' + X(host || 'a site (open one first)') + '</label><div class="sp-acts"><button class="btn1 pri" data-a="nadd">Save note</button></div></div>';
+      const items = L.slice().sort((a, b) => ((b.host && b.host === host) ? 1 : 0) - ((a.host && a.host === host) ? 1 : 0));
+      h += items.map(n => '<div class="row1"><div>' + X(n.title || 'Note') + (n.host ? ' <small style="display:inline">· ' + X(n.host) + '</small>' : '') + '<small style="white-space:pre-wrap">' + X(String(n.body || '').slice(0, 300)) + '</small></div><button class="btn1" data-a="nedit" data-id="' + XA(n.id) + '">Edit</button><button class="btn1 danger" data-a="ndel" data-id="' + XA(n.id) + '">Delete</button></div>').join('');
+      if (!items.length) h += empty('Notes you write here follow you to every device.');
+    } else {
+      h += '<p style="opacity:.8">Ask Aster about the page you are on, or have it summarized. The page text is sent to Aster only when you press a button here.</p><input type="text" id="lpQ" placeholder="Ask a question…"><label style="font-size:12.5px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="lpPg"' + (web ? ' checked' : ' disabled') + '> Include this page (' + X(web ? hostOf(t.url) : 'none open') + ')</label><div class="sp-acts"><button class="btn1 pri" data-a="ask">Ask Aster</button><button class="btn1" data-a="sum"' + (web ? '' : ' disabled') + '>Summarize this page</button></div><div id="lpAns">' + X(CL.ans) + '</div>';
+    }
+    return h;
+  }
+  function drawCloud() {
+    if (!lp.classList.contains('show')) return;
+    lp.innerHTML = '<div class="card1"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:16px">Lareon cloud</b><button class="btn1" data-a="x">Close</button></div><div class="lpts">' + CL_TABS.map(([k, n]) => '<button class="lpt' + (k === CL.tab ? ' on' : '') + '" data-lt="' + k + '">' + n + '</button>').join('') + '</div>' + (CL.err ? '<p class="lperr">' + X(CL.err) + '</p>' : '') + clBody(CL.tab) + '</div>';
+  }
+  async function clAster(kind) {
+    const t = cur(), out = $('#lpAns'); let msg = ($('#lpQ').value || '').trim(), page = null;
+    if (kind === 'sum') msg = 'Summarize this page in a few short bullet points, then tell me the one thing worth remembering.';
+    if (!msg) return toast('Type a question first');
+    const inc = kind === 'sum' || ($('#lpPg') && $('#lpPg').checked);
+    if (inc && isWebTab(t)) { try { const txt = await t.wv.executeJavaScript('(document.body&&document.body.innerText)||""'); page = { title: t.title || '', url: t.url, text: String(txt).slice(0, 12000) }; } catch (_) {} }
+    CL.ans = 'Aster is thinking…'; if (out) out.textContent = CL.ans;
+    let r; try { r = await E.emAster({ message: msg, page }); } catch (_) { r = { error: 'Could not reach Aster.' }; }
+    CL.ans = r && r.reply ? r.reply : ((r && r.error === 'signed-out') ? 'Sign in with your Lareon account first.' : (r && r.error) || 'Aster could not answer. Try again.');
+    const o2 = $('#lpAns'); if (o2) o2.textContent = CL.ans;
+  }
+  lp.addEventListener('click', async e => {
+    if (e.target.closest('[data-cs]')) { lsSet('ember.shareTabs', !shareOn()); await clDevice(); drawCloud(); clLoad('devices'); return; }
+    const t0 = e.target.closest('[data-lt]'); if (t0) { CL.tab = t0.dataset.lt; CL.err = ''; drawCloud(); clLoad(CL.tab); return; }
+    const b = e.target.closest('[data-a]'); if (!b) return;
+    const a = b.dataset.a, id = b.dataset.id, t = cur(), enc = encodeURIComponent(id || '');
+    const done = async (r, ok, tab) => { if (clOk(r)) { if (ok) toast(ok); } else toast(clMsg(r)); if (tab) clLoad(tab); };
+    if (a === 'x') return lp.classList.remove('show');
+    if (a === 'open') { newTab(b.dataset.u); return lp.classList.remove('show'); }
+    if (a === 'send') return clSendTab(t, id);
+    if (a === 'forget') return done(await cl('DELETE', '/api/ember/devices/' + enc), 'Device forgotten', 'devices');
+    if (a === 'radd') { await clRead(t); return clLoad('reading'); }
+    if (a === 'ropen') { newTab(b.dataset.u); cl('POST', '/api/ember/reading/' + enc + '/read', { read: true }); return lp.classList.remove('show'); }
+    if (a === 'rread') return done(await cl('POST', '/api/ember/reading/' + enc + '/read', { read: b.dataset.r === '1' }), '', 'reading');
+    if (a === 'rdel') return done(await cl('DELETE', '/api/ember/reading/' + enc), '', 'reading');
+    if (a === 'cadd') { const name = ($('#lpCn').value || '').trim(), list = clWebTabs(); if (!name) return toast('Give the collection a name'); if (!list.length) return toast('Open some web pages first'); return done(await cl('POST', '/api/ember/collections', { name, tabs: list }), 'Collection saved', 'collections'); }
+    if (a === 'copen') { const c = (CL.d.collections || []).find(x => x.id === id); if (!c) return; (c.tabs || []).slice(0, 30).forEach(x => newTab(x.u)); toast('Opened ' + Math.min(30, (c.tabs || []).length) + ' pages'); return lp.classList.remove('show'); }
+    if (a === 'cdel') return done(await cl('DELETE', '/api/ember/collections/' + enc), '', 'collections');
+    if (a === 'nadd') { const body = ($('#lpNb').value || '').trim(), title = ($('#lpNt').value || '').trim(), hb = $('#lpNh'); if (!body && !title) return toast('Write something first'); const r = await cl('POST', '/api/ember/notes', { id: CL.edit || undefined, title, body, host: hb && hb.checked ? hb.dataset.host : '' }); CL.edit = null; return done(r, 'Note saved', 'notes'); }
+    if (a === 'nedit') { const n = (CL.d.notes || []).find(x => x.id === id); if (!n) return; CL.edit = id; $('#lpNt').value = n.title || ''; $('#lpNb').value = n.body || ''; $('#lpNb').focus(); return; }
+    if (a === 'ndel') return done(await cl('DELETE', '/api/ember/notes/' + enc), '', 'notes');
+    if (a === 'ask' || a === 'sum') return clAster(a);
+  });
+  let clOn = false, clTimers = [];
+  function clSync() {
+    lpbtn.classList.toggle('show', !!acct.signedIn);
+    if (acct.signedIn && !clOn) {
+      clOn = true;
+      setTimeout(async () => { await clDevice(); clInbox(); clMail(); }, 1500);
+      clTimers = [setInterval(clDevice, 60000), setInterval(clInbox, 30000), setInterval(clMail, 120000)];
+    } else if (!acct.signedIn && clOn) {
+      clOn = false; clTimers.forEach(clearInterval); clTimers = []; clQueue = []; clBarDraw(); lp.classList.remove('show'); CL.d = {}; CL.dev = null; clMail();
+    }
+  }
+  const _ps = paintSignin; paintSignin = function () { _ps(); clSync(); };
+  setTimeout(clSync, 9000);
   function drawSettings() {
     paintSignin();
     if (!ov.classList.contains('show')) return;
