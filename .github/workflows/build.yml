@@ -65,8 +65,16 @@ jobs:
           npm pkg set version="${tag#v}"
       - run: npm install
         working-directory: app
-      - run: npx electron-builder ${{ matrix.flag }} --publish never
+      - name: Build (Windows and Linux)
+        if: matrix.os != 'macos-latest'
+        run: npx electron-builder ${{ matrix.flag }} --publish never
         working-directory: app
+      - name: Build (macOS, with retries)
+        if: matrix.os == 'macos-latest'
+        working-directory: app
+        run: |
+          sudo mdutil -a -i off || true
+          for i in 1 2 3; do npx electron-builder --mac --publish never && break; sleep 20; done
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
