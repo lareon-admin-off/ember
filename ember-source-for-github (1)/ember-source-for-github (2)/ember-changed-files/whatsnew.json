@@ -32,5 +32,10 @@
     "Focus mode now reliably shows its full-page screen on a paused site.",
     "Pages no longer show a code -118 error after sitting idle; Ember quietly retries.",
     "A new, friendlier screen when Lareon is having trouble."
+  ],
+  "1.0.8": [
+    "Signing out of your Lareon account on lareon.org now signs Ember out too, and Ember notices within a minute.",
+    "Signing out of Ember also signs out the Lareon pages it opened.",
+    "Just one Lareon trusted badge in the address bar."
   ]
 }
