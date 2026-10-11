@@ -282,6 +282,7 @@
   function endFocus() { focus.until = 0; lsSet('ember.focus', focus); pushMain(); focusTick(); toast('Focus session ended'); drawSettings(); }
   if (E.onFocusBlocked) E.onFocusBlocked(b => toast(b.host + ' is blocked until ' + new Date(b.until).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })));
   errorMessages['-20'] = ['This site is paused.', 'Focus mode is blocking it right now. You can end the session in Settings.', 'Blocked by focus session'];
+  window.emberFocus = { info: () => ({ until: focus.until, sites: focus.sites.slice() }) };
   focusTick();
 
   /* ---------- more menu + pills ---------- */
