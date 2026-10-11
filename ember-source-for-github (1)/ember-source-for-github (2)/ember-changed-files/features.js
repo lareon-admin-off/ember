@@ -623,7 +623,7 @@
   const CL_TABS = [['devices', 'Devices'], ['reading', 'Reading list'], ['collections', 'Collections'], ['notes', 'Notes']];
   async function clLoad(tab) {
     CL.err = '';
-    if (tab === 'devices') await clDevice();
+    if (tab === 'devices') { await clDevice(); const q = await cl('GET', '/api/ember/inbox/recent'); if (clOk(q)) CL.recent = (q.d.items || []).slice(0, 8); }
     const r = await cl('GET', CL_PATH[tab]);
     if (clOk(r)) CL.d[tab] = (tab === 'devices' ? r.d.devices : r.d.items) || []; else CL.err = clMsg(r);
     if (CL.tab === tab) drawCloud();
@@ -645,6 +645,7 @@
       h += '<div class="row1"><div>Send this page<small>' + (web ? X(t.title || hostOf(t.url)) : 'Open a web page first') + '</small></div>' + (web && others.length ? '<button class="btn1 pri" data-a="send" data-id="all">To all devices</button>' : '') + '</div>';
       h += L.map(d => { const mine = d.id === me, ago = clAgo(d.updated_at); return '<div class="row1"><div>' + X(d.name) + (mine ? ' (this device)' : '') + '<small>' + X(d.platform || '') + (ago ? ' · active ' + X(ago) : '') + '</small>' + (d.tabs || []).slice(0, 8).map(x => '<button class="lpl" data-a="open" data-u="' + XA(x.u) + '">' + X(x.t || x.u) + '</button>').join('') + '</div>' + (mine ? '' : (web ? '<button class="btn1" data-a="send" data-id="' + XA(d.id) + '">Send page</button>' : '') + '<button class="btn1 danger" data-a="forget" data-id="' + XA(d.id) + '">Forget</button>') + '</div>'; }).join('');
       if (!others.length) h += empty('Sign in to Ember on another computer with this account and it will show up here.');
+      if ((CL.recent || []).length) h += '<div style="margin:14px 0 4px;font-weight:600">Recently sent</div>' + CL.recent.map(i => '<div class="row1"><div>' + X(i.title || hostOf(i.url)) + '<small>' + X((i.from_name || 'A device') + ' → ' + (i.to_name || 'a device')) + ' · ' + X(clAgo(i.created_at)) + '</small></div><button class="btn1" data-a="open" data-u="' + XA(i.url) + '">Open</button></div>').join('');
     } else if (tab === 'reading') {
       h += '<div class="row1"><div>Save this page for later<small>' + (web ? X(t.title || hostOf(t.url)) : 'Open a web page first') + '</small></div>' + (web ? '<button class="btn1 pri" data-a="radd">Save</button>' : '') + '</div><div class="row1"><div>Save all open tabs<small>Up to 20 pages, private tabs left out</small></div><button class="btn1" data-a="raddall">Save all</button></div>';
       const items = L.slice().sort((a, b) => (a.read ? 1 : 0) - (b.read ? 1 : 0));
@@ -653,7 +654,7 @@
     } else if (tab === 'collections') {
       const n = clWebTabs().length;
       h += '<div class="row1" style="flex-wrap:wrap"><div style="flex:1;min-width:200px">Save your open tabs<small>' + n + ' page' + (n === 1 ? '' : 's') + ' open (private tabs left out)</small><input type="text" id="lpCn" maxlength="60" placeholder="Name, for example Trip planning"></div><button class="btn1 pri" data-a="cadd">Save</button></div>';
-      h += L.map(c => '<div class="row1"><div>' + X(c.name) + '<small>' + (c.tabs || []).length + ' pages · ' + X(clAgo(c.updated_at)) + '</small></div><button class="btn1 pri" data-a="copen" data-id="' + XA(c.id) + '">Open all</button><button class="btn1 danger" data-a="cdel" data-id="' + XA(c.id) + '">Delete</button></div>').join('');
+      h += L.map(c => '<div class="row1"><div>' + X(c.name) + '<small>' + (c.tabs || []).length + ' pages · ' + X(clAgo(c.updated_at)) + '</small></div><button class="btn1 pri" data-a="copen" data-id="' + XA(c.id) + '">Open all</button>' + (c.share ? '<button class="btn1" data-a="ccopy" data-id="' + XA(c.id) + '">Copy link</button><button class="btn1" data-a="cunshare" data-id="' + XA(c.id) + '">Stop sharing</button>' : '<button class="btn1" data-a="cshare" data-id="' + XA(c.id) + '">Share link</button>') + '<button class="btn1 danger" data-a="cdel" data-id="' + XA(c.id) + '">Delete</button></div>').join('');
       if (!L.length) h += empty('Group the pages for a project, a trip or a topic, then open them all again on any device.');
     } else if (tab === 'notes') {
       const host = CL.noteHost != null ? CL.noteHost : (web ? hostOf(t.url) : '');
@@ -684,6 +685,8 @@
     if (a === 'rdel') return done(await cl('DELETE', '/api/ember/reading/' + enc), '', 'reading');
     if (a === 'cadd') { const name = ($('#lpCn').value || '').trim(), list = clWebTabs(); if (!name) return toast('Give the collection a name'); if (!list.length) return toast('Open some web pages first'); return done(await cl('POST', '/api/ember/collections', { name, tabs: list }), 'Collection saved', 'collections'); }
     if (a === 'copen') { const c = (CL.d.collections || []).find(x => x.id === id); if (!c) return; (c.tabs || []).slice(0, 30).forEach(x => newTab(x.u)); toast('Opened ' + Math.min(30, (c.tabs || []).length) + ' pages'); return lp.classList.remove('show'); }
+    if (a === 'cshare' || a === 'ccopy') { let c = (CL.d.collections || []).find(x => x.id === id), tk = c && c.share; if (!c) return; if (!tk) { const r = await cl('POST', '/api/ember/collections/' + enc + '/share', {}); if (!clOk(r) || !r.d.token) return toast(clMsg(r)); tk = r.d.token; c.share = tk; } try { await navigator.clipboard.writeText('https://lareon.org/c/' + tk); toast('Link copied. Anyone with it can see this list of pages.'); } catch (_) { toast('https://lareon.org/c/' + tk); } return clLoad('collections'); }
+    if (a === 'cunshare') return done(await cl('DELETE', '/api/ember/collections/' + enc + '/share'), 'Link turned off', 'collections');
     if (a === 'cdel') return done(await cl('DELETE', '/api/ember/collections/' + enc), '', 'collections');
     if (a === 'nadd') { const body = ($('#lpNb').value || '').trim(), title = ($('#lpNt').value || '').trim(), hb = $('#lpNh'); if (!body && !title) return toast('Write something first'); const r = await cl('POST', '/api/ember/notes', { id: CL.edit || undefined, title, body, host: hb && hb.checked ? hb.dataset.host : '' }); CL.edit = null; return done(r, 'Note saved', 'notes'); }
     if (a === 'nedit') { const n = (CL.d.notes || []).find(x => x.id === id); if (!n) return; CL.edit = id; $('#lpNt').value = n.title || ''; $('#lpNb').value = n.body || ''; $('#lpNb').focus(); return; }
