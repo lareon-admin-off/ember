@@ -319,7 +319,7 @@
   /* ---------- Lareon account + sync ---------- */
   let acct = { signedIn: false, email: '', stage: 'form', msg: '', contact: '', user: '', last: lsGet('ember.sync.at', 0) };
   const SYNC_KEYS = ['ember.bookmarks', 'ember.pinned', 'ember.prefs', 'ember.dock', 'ember.zoom'];
-  const collect = () => { const o = {}; SYNC_KEYS.forEach(k => { const v = lsGet(k, null); if (v != null) o[k] = v; }); o['ember.focussites'] = focus.sites.slice(0, 40); return o; };
+  const collect = () => { const o = {}; SYNC_KEYS.forEach(k => { const v = lsGet(k, null); if (v != null) o[k] = v; }); o['ember.focussites'] = focus.sites.slice(0, 40); if (!histOff()) { o['ember.history'] = hist.slice(0, 150); o['ember.histClr'] = lsGet('ember.histClr', 0); o['ember.histDel'] = lsGet('ember.histDel', []); } return o; };
   const agoTxt = t => { const s = (Date.now() - t) / 1000; return s < 90 ? 'just now' : s < 3600 ? Math.round(s / 60) + ' min ago' : s < 86400 ? Math.round(s / 3600) + ' h ago' : Math.round(s / 86400) + ' d ago'; };
   function mergeData(local, remote, rv, lv) {
     const out = Object.assign({}, local);
@@ -328,9 +328,15 @@
     out['ember.pinned'] = uniq(local['ember.pinned'] || [], remote['ember.pinned'] || [], null);
     if (rv !== lv) ['ember.prefs', 'ember.dock', 'ember.zoom'].forEach(k => { if (remote[k] != null) out[k] = Object.assign({}, local[k] || {}, remote[k]); }); // another device changed these since we last synced
     if (rv !== lv && Array.isArray(remote['ember.focussites'])) out['ember.focussites'] = remote['ember.focussites'];
+    if (!histOff()) {
+      const clr = Math.max(+local['ember.histClr'] || 0, +remote['ember.histClr'] || 0), dm = {}, hm = {};
+      [].concat(local['ember.histDel'] || [], remote['ember.histDel'] || []).forEach(d => { if (d && d.q && d.t > Date.now() - 60 * 864e5) { const k = String(d.q).toLowerCase(); if (!dm[k] || d.t > dm[k].t) dm[k] = { q: String(d.q), t: d.t }; } });
+      [].concat(local['ember.history'] || [], remote['ember.history'] || []).forEach(e => { if (!e || !e.q || !(e.t > clr)) return; const k = String(e.q).toLowerCase(); if (dm[k] && dm[k].t >= e.t) return; if (!hm[k] || e.t > hm[k].t) hm[k] = { q: String(e.q).slice(0, 300), t: e.t }; });
+      out['ember.history'] = Object.values(hm).sort((a, b) => b.t - a.t).slice(0, 150); out['ember.histClr'] = clr; out['ember.histDel'] = Object.values(dm).slice(0, 60);
+    } else ['ember.history', 'ember.histClr', 'ember.histDel'].forEach(k => { if (remote[k] != null) out[k] = remote[k]; });
     return out;
   }
-  function applyData(d) { SYNC_KEYS.forEach(k => { if (d[k] != null) lsSet(k, d[k]); }); if (d['ember.prefs']) Object.assign(P, d['ember.prefs']); if (Array.isArray(d['ember.focussites']) && focus.until <= Date.now()) { focus.sites = d['ember.focussites'].map(String).slice(0, 40); lsSet('ember.focus', focus); } barKey = ''; drawBar(); }
+  function applyData(d) { SYNC_KEYS.forEach(k => { if (d[k] != null) lsSet(k, d[k]); }); if (d['ember.prefs']) Object.assign(P, d['ember.prefs']); if (Array.isArray(d['ember.focussites']) && focus.until <= Date.now()) { focus.sites = d['ember.focussites'].map(String).slice(0, 40); lsSet('ember.focus', focus); } if (!histOff() && Array.isArray(d['ember.history'])) { hist = d['ember.history'].slice(0, 200); saveHist(); lsSet('ember.histClr', +d['ember.histClr'] || 0); lsSet('ember.histDel', d['ember.histDel'] || []); } barKey = ''; drawBar(); }
   async function refreshAcct() { try { const s = E.acctState && await E.acctState(); if (s) { acct.signedIn = !!s.signedIn; acct.email = s.email || ''; acct.name = s.name || ''; } } catch (_) {} }
   async function doSync(manual) {
     if (!E.syncPull || !acct.signedIn) return;
@@ -529,6 +535,60 @@
   setInterval(checkAcct, 45000);
   window.addEventListener('focus', checkAcct);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) checkAcct(); });
+  /* ---------- address bar suggestions (1.1) ---------- */
+  const sgBar = $('#bar');
+  const sgBox = document.createElement('div'); sgBox.id = 'sgbox'; document.body.appendChild(sgBox);
+  const sgCss = document.createElement('style');
+  sgCss.textContent = '#sgbox{display:none;position:fixed;z-index:9000;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,.45);padding:6px;max-height:340px;overflow:auto;-webkit-app-region:no-drag}#sgbox.show{display:block}#sgbox div{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;font-size:13.5px;color:var(--text);cursor:pointer}#sgbox div.on,#sgbox div:hover{background:rgba(255,255,255,.08)}#sgbox i{font-style:normal;opacity:.55;width:16px;text-align:center;flex:none}#sgbox span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#sgbox em{font-style:normal;font-size:11.5px;opacity:.5}#sgbox h6{margin:6px 10px 2px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.5;font-weight:600}';
+  document.head.appendChild(sgCss);
+  let sgItems = [], sgSel = -1, sgSeq = 0, sgTimer = 0;
+  const sgHide = () => { sgSeq++; clearTimeout(sgTimer); sgBox.classList.remove('show'); sgItems = []; sgSel = -1; };
+  function sgDraw() {
+    if (!sgItems.length) { sgBox.classList.remove('show'); return; }
+    let h = '', last = '';
+    sgItems.forEach((it, i) => { if (it.g !== last) { last = it.g; h += '<h6>' + X(it.g) + '</h6>'; } h += '<div data-i="' + i + '" class="' + (i === sgSel ? 'on' : '') + '"><i>' + (it.k === 'h' ? '↺' : '⌕') + '</i><span>' + X(it.q) + '</span>' + (it.t ? '<em>' + X(agoTxt(it.t)) + '</em>' : '') + '</div>'; });
+    sgBox.innerHTML = h;
+    const r = sgBar.getBoundingClientRect();
+    sgBox.style.left = r.left + 'px'; sgBox.style.top = (r.bottom + 6) + 'px'; sgBox.style.width = Math.max(r.width, 320) + 'px';
+    sgBox.classList.add('show');
+  }
+  function sgPast(low) {
+    const t = cur();
+    if ((t && t.priv) || histOff()) return [];
+    return hist.filter(e => e && e.q && e.q.toLowerCase() !== low && (!low || e.q.toLowerCase().indexOf(low) >= 0)).slice(0, low ? 4 : 6).map(e => ({ k: 'h', q: e.q, t: e.t, g: 'Your searches' }));
+  }
+  function sgOnInput() {
+    const v = sgBar.value.trim(), seq = ++sgSeq; clearTimeout(sgTimer);
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(v) || /^(ember|about|chrome):/i.test(v)) return sgHide();
+    const past = sgPast(v.toLowerCase());
+    sgItems = past; sgSel = -1; sgDraw();
+    if (v.length < 2 || P.noSuggest || !E.search || !E.search.suggest) return;
+    if (!/\s/.test(v) && /^[\w.-]+\.[a-z]{2,}(\/|$)/i.test(v)) return;
+    sgTimer = setTimeout(async () => {
+      let r = []; try { r = await E.search.suggest(v); } catch (_) {}
+      if (seq !== sgSeq) return;
+      const have = new Set(past.map(x => x.q.toLowerCase()).concat([v.toLowerCase()]));
+      const live = (r || []).filter(x => !have.has(String(x).toLowerCase())).slice(0, 5).map(x => ({ k: 's', q: String(x), g: 'Suggestions' }));
+      sgItems = past.concat(live); sgSel = -1; sgDraw();
+    }, 180);
+  }
+  const sgPick = i => { const it = sgItems[i]; if (!it) return; sgBar.value = it.q; sgHide(); go(it.q); sgBar.blur(); };
+  sgBar.addEventListener('input', sgOnInput);
+  sgBar.addEventListener('focus', () => { const t = cur(); if (!sgBar.value.trim() || (t && t.mode !== 'web')) { sgItems = sgPast(''); sgSel = -1; sgDraw(); } });
+  sgBar.addEventListener('blur', () => setTimeout(sgHide, 120));
+  sgBox.addEventListener('mousedown', e => { e.preventDefault(); const d = e.target.closest('[data-i]'); if (d) sgPick(+d.dataset.i); });
+  document.addEventListener('keydown', e => {
+    if (e.target !== sgBar || !sgBox.classList.contains('show')) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); e.stopPropagation(); const n = sgItems.length; sgSel = e.key === 'ArrowDown' ? (sgSel + 1) % n : (sgSel <= 0 ? n - 1 : sgSel - 1); sgDraw(); }
+    else if (e.key === 'Enter' && sgSel >= 0) { e.preventDefault(); e.stopPropagation(); sgPick(sgSel); }
+    else if (e.key === 'Escape') { sgHide(); }
+  }, true);
+  document.addEventListener('click', e => {
+    const c = e.target.closest && e.target.closest('#histClear, #library [data-del]'); if (!c) return;
+    if (c.id === 'histClear') { lsSet('ember.histClr', Date.now()); lsSet('ember.histDel', []); }
+    else { const h = hist[+c.dataset.del]; if (h && h.q) { const d = lsGet('ember.histDel', []).filter(x => x && x.q && x.q.toLowerCase() !== h.q.toLowerCase()); d.unshift({ q: h.q, t: Date.now() }); lsSet('ember.histDel', d.slice(0, 60)); } }
+    setTimeout(() => { if (acct.signedIn) doSync(false); }, 1500);
+  }, true);
   /* ---------- Lareon cloud (1.1) ---------- */
   const XA = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const CL = { dev: null, tab: 'devices', d: {}, err: '', shown: {}, noteHost: null, edit: null, ans: '' };
@@ -727,6 +787,7 @@
       '<div class="row1"><div>Clean links<small>Removes tracking bits like utm_ and fbclid from addresses.</small></div>' + sw('clean', P.clean) + '</div>' +
       '<div class="row1"><div>Calm mode<small>Stops videos from starting on their own and hides notification and location requests.</small></div>' + sw('calm', P.calm) + '</div>' +
       '<div class="row1"><div>Bookmarks bar<small>Shows your bookmarks under the address bar.</small></div>' + sw('bar', P.bar) + '</div>' +
+      '<div class="row1"><div>Search suggestions<small>Shows ideas while you type in the address bar. What you type is sent to DuckDuckGo to get them. Your own past searches always show.</small></div>' + sw('noSuggest', !P.noSuggest) + '</div>' +
       '<h3>Lareon account</h3>' + acctHtml() + pwHtml() +
       '<h3>Bring your bookmarks</h3><div class="row1"><div>From Chrome, Edge or Brave<small>Ember reads the bookmarks already on this computer.</small></div><button class="btn1" id="setImp">Import</button></div>' +
       '<div class="row1"><div>From a file<small>Any browser can export bookmarks as an .html file.</small></div><button class="btn1" id="setImpF">Choose file…</button></div>' +
