@@ -674,6 +674,20 @@ function coalIconSvg(){ const d='M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function emberOutIcon(){ const d='M0 -54 Q34 -14 32 14 Q30 44 0 46 Q-30 44 -32 14 Q-34 -14 0 -54Z'; return '<svg class="err-svg" viewBox="0 0 150 150" aria-hidden="true"><defs><linearGradient id="errG" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff7c1f"/><stop offset="1" stop-color="#ff4f9a" stop-opacity="0"/></linearGradient></defs><path transform="translate(57 90) rotate(-9)" d="'+d+'" fill="#2f2b3d"/><path transform="translate(93 90) rotate(9)" d="'+d+'" fill="#2f2b3d"/><path class="err-glow" transform="translate(93 90) rotate(9)" d="'+d+'" fill="url(#errG)"/></svg>'; }
 window.addEventListener('online',()=>{ tabs.forEach(t=>{ if(t.error && (t.error.code===-106||t.error.code===-105||t.error.code===-107) && t.wv){ const u=t.error.url||t.url; t.error=null; if(t.id===active){ $('#webError').style.display='none'; t.wv.style.display=''; } loadSafe(t,u); render(); } }); });
+function showFocusScreen(t, box) {
+  const fi = (window.emberFocus && window.emberFocus.info && window.emberFocus.info()) || {};
+  let host = ''; try { host = new URL(t.error.url || t.url).hostname.replace(/^www\./, ''); } catch (_) {}
+  const left = Math.max(1, Math.ceil(((fi.until || 0) - Date.now()) / 60000));
+  const until = fi.until ? new Date(fi.until).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+  const icon = '<svg class="err-svg" viewBox="0 0 96 96" aria-hidden="true"><defs><linearGradient id="fcG" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff7c1f"/><stop offset="1" stop-color="#ff4f9a" stop-opacity="0"/></linearGradient><clipPath id="fcC"><path d="M60 12A36 36 0 1 0 84 62A29 29 0 0 1 60 12Z"/></clipPath></defs><path d="M60 12A36 36 0 1 0 84 62A29 29 0 0 1 60 12Z" fill="#2f2b3d"/><g clip-path="url(#fcC)"><rect class="err-glow" x="10" y="30" width="76" height="62" fill="url(#fcG)"/></g></svg>';
+  const codeTxt = 'Blocked by focus session' + (until ? ' · until ' + until : '');
+  box.classList.remove('bad');
+  box.innerHTML = '<div class="err"><div class="error-brand ember-error-brand"><img src="assets/mark.svg"><span>Ember Focus</span></div><div class="err-art">' + icon + '</div><h2>Focus mode is on</h2><p>' + esc('This site is paused until your focus session ends. It will be back in ' + left + (left === 1 ? ' minute.' : ' minutes.')) + '</p>' + (host ? '<div class="err-url">' + esc(host) + '</div>' : '') + '<div class="err-actions"><button id="fcBack" class="err-primary">Back to Ember</button><button id="fcSet" class="error-home">Open Settings</button></div><code>' + esc(codeTxt) + '</code></div>';
+  box.style.display = 'flex';
+  $('#fcBack').onclick = () => leaveToStart(t, box);
+  $('#fcSet').onclick = () => { if (window.openEmberSettings) window.openEmberSettings(); };
+  $('#fcBack').focus({ preventScroll: true });
+}
 function showWebError(t) {
   const box=$('#webError');
   if (!box || t.id !== active || t.mode !== 'web' || !t.error) {
@@ -688,6 +702,7 @@ function showWebError(t) {
   box.classList.remove('bad');
   if (t.error.code === 'adult' || (t.error.code === 'risk' && ADULT18[(t.error.info || {}).cat])) { showAdultScreen(t, box); return; }
   if (/^(scam|risk|insecure)$/.test(t.error.code) || isCertCode(t.error.code) || t.error.code === 'threat') { showSecScreen(t, box); return; }
+  if (Number(t.error.code) === -20) { showFocusScreen(t, box); return; }
   const [baseTitle,baseDesc,detail]=errorInfo(t.error.code, t.error);
   const lareon=isL(t.url);
   const svcText=lareon && !(t.error.http && t.error.status<500);
