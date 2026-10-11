@@ -67,6 +67,12 @@ module.exports = function ({ app, ipcMain, getWin }) {
       return r.ok && r.d.token ? done(r) : { error: r.d.error || 'That code did not work' };
     } catch (_) { return { error: 'Could not reach Lareon. Check your connection.' }; }
   });
+  // Is this still a valid Lareon session? Signing out on lareon.org (or from another device) ends it, and Ember must notice.
+  ipcMain.handle('acct:check', async () => {
+    const s = load(); if (!s) return { signedOut: true };
+    try { const r = await api('/api/account/profile', {}, s.token); if (r.status === 401 || r.status === 403) { drop(); return { signedOut: true }; } return { ok: r.ok }; }
+    catch (_) { return { offline: true }; }
+  });
   ipcMain.handle('acct:logout', async () => { const s = load(); if (s) { try { await api('/api/logout', { method: 'POST', body: '{}' }, s.token); } catch (_) {} } drop(); return true; });
   ipcMain.handle('sync:pull', async () => {
     const s = load(); if (!s) return { error: 'signed-out' };
@@ -75,7 +81,7 @@ module.exports = function ({ app, ipcMain, getWin }) {
   });
   ipcMain.handle('sync:push', async (_, data, base) => {
     const s = load(); if (!s) return { error: 'signed-out' };
-    try { const r = await api('/api/sync/push', { method: 'POST', body: JSON.stringify({ data: String(data || ''), baseVersion: Number(base) || 0, device: device() }) }, s.token); return Object.assign({ ok: r.ok, status: r.status }, r.d); }
+    try { const r = await api('/api/sync/push', { method: 'POST', body: JSON.stringify({ data: String(data || ''), baseVersion: Number(base) || 0, device: device() }) }, s.token); if (r.status === 401) { drop(); return { error: 'signed-out' }; } return Object.assign({ ok: r.ok, status: r.status }, r.d); }
     catch (_) { return { error: 'Could not reach Lareon' }; }
   });
 };
