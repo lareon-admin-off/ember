@@ -1,4 +1,13 @@
 {
+  "1.1.0": [
+    "Your Lareon account now does a lot more. Right-click a tab to send it to another device, save it to a reading list, email it to yourself, or jot a note about the site.",
+    "New Lareon cloud panel in the toolbar (Ctrl+Shift+L): your devices, reading list, collections, notes, and Ask Aster about the page you are on.",
+    "Save your open tabs as a collection and open them all again on any device.",
+    "Your unread Fledge mail count shows on the mail button.",
+    "Ember settings now live in your Lareon account on lareon.org, under Ember. Focus sites sync too.",
+    "Sharing your open tabs with your other devices is off by default and never includes private tabs.",
+    "One Lareon badge on the address bar instead of two."
+  ],
   "1.0.3": [
     "Ember Sync: sign in with your Lareon account in Settings and your bookmarks, pinned sites and preferences follow you to every device.",
     "Ember now opens Fledge, Lareon’s email, from the sidebar.",
