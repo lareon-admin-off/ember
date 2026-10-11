@@ -482,7 +482,7 @@
     } else {
       b.classList.remove('me');
       if (acct.pending && Date.now() < acct.pending.until) {
-        b.classList.add('me'); b.innerHTML = b.dataset.star + '<span class="nm"><b>Code ' + X(acct.pending.short) + '</b><small>Check it matches on the page</small></span>'; b.title = 'Waiting for you to approve in your browser tab. Click to start again.';
+        b.classList.add('me'); b.innerHTML = b.dataset.star + (acct.pending.show ? '<span class="nm"><b>Code ' + X(acct.pending.short) + '</b><small>Check it matches on the page</small></span>' : '<span class="nm"><b>Signing in…</b><small>Finish in your browser tab</small></span>'); b.title = 'Waiting for you to approve in your browser tab. Click to start again.';
       } else { acct.pending = null; b.innerHTML = b.dataset.star + 'Sign in with Lareon'; b.title = 'Sign in to Lareon'; }
     }
   }
@@ -493,7 +493,7 @@
     if (!acct.signedIn) {
       let r = null; try { r = E.acctLink && await E.acctLink(); } catch (_) {}
       newTab((r && r.url) || 'https://lareon.org/account');
-      if (r && r.short) { acct.pending = { short: r.short, until: Date.now() + 600000 }; paintSignin(); setTimeout(paintSignin, 600500); }
+      if (r && r.short) { acct.pending = { short: r.short, until: Date.now() + 600000, show: false }; paintSignin(); setTimeout(() => { if (acct.pending && !acct.pending.show) { acct.pending.show = true; paintSignin(); } }, 45000); setTimeout(paintSignin, 600500); }
       return;
     }
     let url = 'https://lareon.org/account';
@@ -501,6 +501,7 @@
     newTab(url);
   };
   try { E.onAcctLinked && E.onAcctLinked(d => { acct.pending = null; acct.signedIn = true; acct.email = d.email || ''; acct.name = d.name || ''; acct.msg = ''; paintSignin(); toast('Signed in as ' + (d.name || d.email)); drawSettings(); doSync(false); }); } catch (_) {}
+  try { E.onAcctViewing && E.onAcctViewing(() => { if (acct.pending) { acct.pending.show = true; paintSignin(); } }); } catch (_) {}
   refreshAcct().then(paintSignin);
   function drawSettings() {
     paintSignin();
