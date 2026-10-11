@@ -37,12 +37,13 @@ module.exports = function ({ app, ipcMain, getWin }) {
     if (linkTimer) { clearInterval(linkTimer); linkTimer = null; }
     let st; try { st = await api('/api/auth/link/start', { method: 'POST', body: '{}' }); } catch (_) { return { url: BASE + '/account' }; }
     if (!st.ok || !st.d.id) return { url: BASE + '/account' };
-    const { id, secret, short } = st.d; const until = Date.now() + 10 * 60000;
+    const { id, secret, short } = st.d; const until = Date.now() + 10 * 60000; let viewed = false;
     linkTimer = setInterval(async () => {
       if (Date.now() > until) { clearInterval(linkTimer); linkTimer = null; return; }
       try {
         const r = await api('/api/auth/link/poll', { method: 'POST', body: JSON.stringify({ id, secret }) });
         if (r.status === 410) { clearInterval(linkTimer); linkTimer = null; return; }
+        if (r.ok && r.d.pending && r.d.viewing && !viewed) { viewed = true; const w0 = getWin && getWin(); if (w0 && !w0.isDestroyed()) w0.webContents.send('acct:viewing', {}); }
         if (r.ok && r.d.token) {
           clearInterval(linkTimer); linkTimer = null;
           const u = r.d.user || {}; save({ token: r.d.token, email: u.email, username: u.username, name: u.display_name || '' });
