@@ -183,7 +183,7 @@ function hookSecurity(ses) {
   ses.webRequest.onBeforeRequest({ urls: ['http://*/*', 'https://*/*'] }, (d, cb) => {
     if (d.resourceType === 'mainFrame') {
       const h = hostOf(d.url), wcId = d.webContentsId || 0;
-      if (focusBlocked(h)) { try { if (win && !win.isDestroyed()) win.webContents.send('focus:blocked', { wc: wcId, host: h, until: prefs.focusUntil }); } catch (_) {} return cb({ cancel: true }); }
+      if (focusBlocked(h)) { try { if (win && !win.isDestroyed()) win.webContents.send('focus:blocked', { wc: wcId, host: h, until: prefs.focusUntil, main: d.resourceType === 'mainFrame', url: d.url }); } catch (_) {} return cb({ cancel: true }); }
       if (prefs.cleanLinks) { const cl = cleanUrl(d.url); if (cl) return cb({ redirectURL: cl }); }
       // tell the Ember window right away, so it shows the warning screen no matter which error code Chromium reports for the cancelled load
       const block = (kind, info) => { try { if (win && !win.isDestroyed()) win.webContents.send('nav:blocked', { wc: wcId, url: d.url, kind, info }); } catch (_) {} return cb({ cancel: true }); };
