@@ -25,5 +25,9 @@
   "1.0.6": [
     "Focus mode now shows a full-page screen when you open a paused site.",
     "Signing in with Lareon shows its code only when the page asks you to confirm it."
+  ],
+  "1.0.7": [
+    "On Mac, Get the update now downloads the new version, checks it, and opens the installer for you.",
+    "Ember cleans up the downloaded installer the next time it starts."
   ]
 }
