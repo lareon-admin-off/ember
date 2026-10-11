@@ -587,6 +587,8 @@ function mkWv(t) {
   });
   w.addEventListener('did-fail-load', e => {
     if (e.errorCode === -3 || !e.isMainFrame) return;
+    // a one-off network hiccup (timeout, reset connection): quietly try again before showing an error
+    if (TRANSIENT.has(e.errorCode) && (t.retryN || 0) < 2 && /^https?:/i.test(e.validatedURL || '')) { t.retryN = (t.retryN || 0) + 1; clearTimeout(t.loadTimer); const ru = e.validatedURL, n0 = t.retryN; setTimeout(() => { if (t.wv && tabs.includes(t) && !t.error) loadSafe(t, ru); }, 1200 * n0); return; }
     clearTimeout(t.loadTimer);
     if (t.error && /^(adult|threat|scam|risk|insecure)$/.test(t.error.code)) { try { if (new URL(t.error.url).hostname === new URL(e.validatedURL).hostname) { showWebError(t); return; } } catch (_) {} }
     if (e.errorCode === -20 && window.ember && window.ember.threatCheck) {
@@ -606,6 +608,7 @@ function mkWv(t) {
     render();
   });
   w.addEventListener('did-start-loading', () => { t.loading = true; if (t.id === active) loadBar(true); });
+  w.addEventListener('did-finish-load', () => { t.retryN = 0; });
   w.addEventListener('did-stop-loading', () => { t.loading = false; if (t.id === active) loadBar(false); });
   w.addEventListener('page-favicon-updated', e => { t.fav = (e.favicons || [])[0] || ''; render(); });
   w.addEventListener('page-title-updated', e => { t.title = e.title; render(); });
@@ -631,6 +634,7 @@ function select(id) {
   showWebError(t);
   loadBar(!!t.loading); drawSbar();
 }
+const TRANSIENT = new Set([-100, -101, -102, -103, -104, -109, -118, -324]);
 const errorMessages = {
   '-105':['That address got lost.','Ember couldn’t find a server for that address. Maybe check the spelling?','DNS / host not found'],
   '-106':['Ember is offline.','The internet connection seems to have wandered away. Reconnect and Ember will be ready.','Internet disconnected'],
@@ -688,6 +692,7 @@ function showFocusScreen(t, box) {
   $('#fcSet').onclick = () => { if (window.openEmberSettings) window.openEmberSettings(); };
   $('#fcBack').focus({ preventScroll: true });
 }
+function lareonErrIcon(){ return '<svg class="err-svg" viewBox="0 0 96 96" aria-hidden="true"><defs><linearGradient id="lrG" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff7c1f"/><stop offset="1" stop-color="#ff4f9a" stop-opacity="0"/></linearGradient><clipPath id="lrC"><circle cx="48" cy="48" r="36"/></clipPath></defs><circle cx="48" cy="48" r="36" fill="#2f2b3d"/><g clip-path="url(#lrC)"><rect class="err-glow" x="10" y="30" width="76" height="62" fill="url(#lrG)"/></g><path d="M62 38A17 17 0 1 0 65 51" fill="none" stroke="#ffb347" stroke-width="4" stroke-linecap="round"/><path d="M63 28v11H52" fill="none" stroke="#ffb347" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>'; }
 function showWebError(t) {
   const box=$('#webError');
   if (!box || t.id !== active || t.mode !== 'web' || !t.error) {
@@ -706,20 +711,21 @@ function showWebError(t) {
   const [baseTitle,baseDesc,detail]=errorInfo(t.error.code, t.error);
   const lareon=isL(t.url);
   const svcText=lareon && !(t.error.http && t.error.status<500);
-  const title=svcText ? 'Lareon couldn’t open this page.' : baseTitle;
-  const desc=svcText ? 'The Lareon service is having trouble responding right now. Ember kept you here instead of leaving you with a blank page.' : baseDesc;
+  const title=svcText ? 'Lareon is having trouble.' : baseTitle;
+  const desc=svcText ? 'The Lareon service didn’t respond just now. This is usually brief, and Ember kept you here instead of leaving you with a blank page.' : baseDesc;
   const badge=lareon ? '<div class="error-brand">'+lareonBadgeSvg()+'<span>Lareon service</span></div>' : '<div class="error-brand ember-error-brand"><img src="assets/mark.svg"><span>Ember</span></div>';
   let host=''; try{ host=new URL(t.error.url||t.url).host; }catch(_){}
-  const art=lareon?lareonBadgeSvg():emberOutIcon();
+  const art=svcText?lareonErrIcon():lareon?lareonBadgeSvg():emberOutIcon();
   const net=(t.error.desc&&/^(net::)?ERR_/.test(t.error.desc))?t.error.desc.replace(/^net::/,''):'';
   const codeTxt=t.error.http?detail:detail+' · '+(net?net+' ':'')+'(code '+t.error.code+')';
-  box.innerHTML='<div class="err">'+badge+'<div class="err-art">'+art+'</div><h2>'+esc(title)+'</h2><p>'+esc(desc)+'</p>'+(host?'<div class="err-url">'+esc(host)+'</div>':'')+'<div class="err-actions"><button id="retryWeb" class="err-primary">Try again</button><button class="error-home" id="errorHome">Back to Ember</button>'+(t.error.http?'<button class="error-home" id="showAnyway">Show page anyway</button>':'')+'</div><code id="errCode" title="Click to copy">'+esc(codeTxt)+'</code></div>';
+  box.innerHTML='<div class="err">'+badge+'<div class="err-art">'+art+'</div><h2>'+esc(title)+'</h2><p>'+esc(desc)+'</p>'+(host?'<div class="err-url">'+esc(host)+'</div>':'')+'<div class="err-actions"><button id="retryWeb" class="err-primary">Try again</button><button class="error-home" id="errorHome">Back to Ember</button>'+(t.error.http?'<button class="error-home" id="showAnyway">Show page anyway</button>':'')+(svcText?'<button class="error-home" id="errStatus">Lareon status</button>':'')+'</div><code id="errCode" title="Click to copy">'+esc(codeTxt)+'</code></div>';
   box.style.display='flex';
   clearTimeout(t.errorTimer);
   t.errorShownAt=Date.now();
   const failUrl=t.error.url||t.url;
   $('#retryWeb').onclick=()=>{ t.error=null; clearTimeout(t.errorTimer); clearTimeout(t.loadTimer); box.style.display='none'; if(t.wv){ t.wv.style.display=''; loadSafe(t, failUrl); } };
   $('#errorHome').onclick=()=>leaveToStart(t, box);
+  const es=$('#errStatus'); if(es) es.onclick=()=>newTab('https://lareon.org/status');
   const sa=$('#showAnyway'); if(sa) sa.onclick=()=>{ t.error=null; box.style.display='none'; if(t.wv) t.wv.style.display=''; render(); };
   $('#retryWeb').focus({preventScroll:true});
   const ec=$('#errCode'); ec.onclick=()=>{ try{ navigator.clipboard.writeText(codeTxt+(host?' · '+host:'')); }catch(_){} ec.textContent='Copied ✓'; setTimeout(()=>{ ec.textContent=codeTxt; },1200); };
