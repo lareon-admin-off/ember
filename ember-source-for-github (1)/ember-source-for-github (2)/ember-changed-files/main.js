@@ -459,6 +459,16 @@ async function wikiSearch(query, page = 1) {
     return ((j.query && j.query.search) || []).map(x => ({title:x.title, url:'https://en.wikipedia.org/wiki/'+encodeURIComponent(String(x.title).replace(/ /g,'_')), desc:x.snippet||''}));
   } catch (_) { return []; }
 }
+ipcMain.handle('search:suggest', async (_, q) => {
+  const query = String(q || '').trim().slice(0, 100);
+  if (query.length < 2) return [];
+  try {
+    const r = await fetch('https://duckduckgo.com/ac/?type=list&q=' + encodeURIComponent(query), { signal: AbortSignal.timeout(2500), headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/537.36 Chrome/154 Safari/537.36', 'Accept': 'application/json' } });
+    if (!r.ok) return [];
+    const j = await r.json();
+    return (Array.isArray(j) && Array.isArray(j[1]) ? j[1] : []).filter(x => typeof x === 'string').slice(0, 6);
+  } catch (_) { return []; }
+});
 ipcMain.handle('search:query', async (_, q, pageNo) => {
   const query = String(q).trim().slice(0, 300);
   const page = Math.max(1, Math.min(50, parseInt(pageNo, 10) || 1));
