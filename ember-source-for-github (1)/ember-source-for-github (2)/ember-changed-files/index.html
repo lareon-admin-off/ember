@@ -335,7 +335,7 @@ function loadBar(on){ const b=$('#loadbar'); if(!b) return; if(on){ b.style.tran
 
 const star = n => '<svg class="star" width="'+n+'" height="'+n+'" viewBox="0 0 150 150" aria-hidden="true"><path d="M75 28 Q55 45 55 70 Q40 65 25 75 Q42 80 53 90 Q45 105 48 122 Q60 110 68 95 Q70 112 75 128 Q80 112 82 95 Q90 110 102 122 Q105 105 97 90 Q108 80 125 75 Q110 65 95 70 Q95 45 75 28Z" fill="url(#lareonStar)"/></svg>';
 const isL = u => { try { const h = new URL(u).hostname; return h === 'lareon.org' || h.endsWith('.lareon.org'); } catch { return false; } };
-const lstar = u => { $('#lstar').style.display = isL(u) ? 'flex' : 'none'; };
+const lstar = u => { $('#lstar').style.display = 'none'; /* the Lareon trusted pill already says it */ };
 const cur = () => tabs.find(t => t.id === active);
 function norm(v) {
   v = v.trim(); if (!v) return '';
