@@ -73,6 +73,35 @@ module.exports = function ({ app, ipcMain, getWin }) {
     try { const r = await api('/api/account/profile', {}, s.token); if (r.status === 401 || r.status === 403) { drop(); return { signedOut: true }; } return { ok: r.ok }; }
     catch (_) { return { offline: true }; }
   });
+  // Lareon cloud features in Ember (send a tab, other devices, reading list, collections, notes, mail count). Only these paths are reachable, always with the signed-in session.
+  const EM_OK = /^\/api\/(ember\/[A-Za-z0-9\/_-]*(\?device=[A-Za-z0-9_-]{6,40})?|account\/summary)$/;
+  const devId = () => {
+    const f = path.join(app.getPath('userData'), 'ember-device-id');
+    try { const v = fs.readFileSync(f, 'utf8').trim(); if (/^[A-Za-z0-9_-]{6,40}$/.test(v)) return v; } catch (_) {}
+    const v = 'dev-' + require('crypto').randomBytes(8).toString('hex'); try { fs.writeFileSync(f, v, { mode: 0o600 }); } catch (_) {} return v;
+  };
+  ipcMain.handle('em:device', () => ({ id: devId(), name: device(), platform: process.platform }));
+  ipcMain.handle('em:call', async (_, method, p, body) => {
+    const s = load(); if (!s) return { error: 'signed-out' };
+    method = String(method || 'GET').toUpperCase(); p = String(p || '');
+    if (['GET', 'POST', 'PUT', 'DELETE'].indexOf(method) < 0 || !EM_OK.test(p)) return { error: 'blocked' };
+    try {
+      const r = await api(p, { method, body: body === undefined ? undefined : JSON.stringify(body) }, s.token);
+      if (r.status === 401) { drop(); return { error: 'signed-out' }; }
+      return { ok: r.ok, status: r.status, d: r.d };
+    } catch (_) { return { error: 'offline' }; }
+  });
+  // Ask Aster about the page you are on. Nothing is saved to your Aster chats.
+  ipcMain.handle('em:aster', async (_, o) => {
+    const s = load(); if (!s) return { error: 'signed-out' };
+    o = o || {}; const pg = o.page || {};
+    const msg = String(o.message || '').slice(0, 1500); if (!msg) return { error: 'Ask something first' };
+    try {
+      const r = await api('/api/aster/chat', { method: 'POST', signal: AbortSignal.timeout(70000), body: JSON.stringify({ message: msg, save: false, page: { title: String(pg.title || '').slice(0, 200), url: String(pg.url || '').slice(0, 500), text: String(pg.text || '').slice(0, 14000) } }) }, s.token);
+      if (r.status === 401) { drop(); return { error: 'signed-out' }; }
+      return r.ok && r.d.reply ? { reply: String(r.d.reply) } : { error: (r.d && r.d.error) || 'Aster could not answer just now' };
+    } catch (_) { return { error: 'Could not reach Aster. Try again.' }; }
+  });
   ipcMain.handle('acct:logout', async () => { const s = load(); if (s) { try { await api('/api/logout', { method: 'POST', body: '{}' }, s.token); } catch (_) {} } drop(); return true; });
   ipcMain.handle('sync:pull', async () => {
     const s = load(); if (!s) return { error: 'signed-out' };
