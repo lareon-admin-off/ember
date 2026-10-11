@@ -341,7 +341,7 @@
       const p = await E.syncPush(JSON.stringify(merged), r.version);
       if (p.ok) { applyData(merged); lsSet('ember.sync.ver', p.version); lsSet('ember.sync.at', Date.now()); acct.last = Date.now(); acct.msg = 'Synced.'; break; }
       if (p.status === 409) { r = { version: p.version, data: p.data }; continue; }
-      acct.msg = p.error || 'Could not sync'; break;
+      if (p.error === 'signed-out') { acct.signedIn = false; acct.email = ''; acct.name = ''; acct.msg = 'You were signed out of Lareon. Sign in again.'; } else acct.msg = p.error || 'Could not sync'; break;
     }
     drawSettings();
   }
@@ -354,7 +354,7 @@
   function acctWire() {
     const g = id => $('#' + id);
     if (g('acSync')) g('acSync').onclick = () => doSync(true);
-    if (g('acOut')) g('acOut').onclick = async () => { await E.acctLogout(); acct = Object.assign(acct, { signedIn: false, email: '', stage: 'form', msg: '' }); drawSettings(); };
+    if (g('acOut')) g('acOut').onclick = async () => { try { await E.acctLogout(); } catch (_) {} acct = Object.assign(acct, { signedIn: false, email: '', name: '', pending: null, stage: 'form', msg: '' }); drawSettings(); toast('Signed out of Lareon'); };
     if (g('acNew')) g('acNew').onclick = () => { ov.classList.remove('show'); newTab('https://lareon.org/account#register'); };
     const login = async () => { acct.msg = 'Signing in…'; const r = await E.acctLogin(g('acU').value.trim(), g('acP').value); if (r.ok) { acct.signedIn = true; acct.email = r.email; acct.name = r.name || ''; acct.msg = ''; acct.stage = 'form'; drawSettings(); doSync(true); return; } if (r.needCode) { acct.stage = 'code'; acct.contact = r.contact; acct.user = r.username; acct.msg = ''; } else acct.msg = r.error || 'Could not sign in'; drawSettings(); };
     if (g('acGo')) { g('acGo').onclick = login; g('acP').onkeydown = e => { if (e.key === 'Enter') login(); }; }
@@ -511,6 +511,18 @@
   try { E.onAcctLinked && E.onAcctLinked(d => { acct.pending = null; acct.signedIn = true; acct.email = d.email || ''; acct.name = d.name || ''; acct.msg = ''; paintSignin(); toast('Signed in as ' + (d.name || d.email)); drawSettings(); doSync(false); }); } catch (_) {}
   try { E.onAcctViewing && E.onAcctViewing(() => { if (acct.pending) { acct.pending.show = true; paintSignin(); } }); } catch (_) {}
   refreshAcct().then(paintSignin);
+  // Signing out on lareon.org (or ending this session elsewhere) must show here too, so ask whether the session is still good.
+  let chkBusy = false;
+  async function checkAcct() {
+    if (chkBusy || !acct.signedIn || !E.acctCheck) return; chkBusy = true;
+    try {
+      const r = await E.acctCheck();
+      if (r && r.signedOut && acct.signedIn) { acct.signedIn = false; acct.email = ''; acct.name = ''; acct.pending = null; acct.stage = 'form'; acct.msg = 'You were signed out of Lareon.'; paintSignin(); drawSettings(); toast('You were signed out of Lareon'); }
+    } catch (_) {} chkBusy = false;
+  }
+  setInterval(checkAcct, 45000);
+  window.addEventListener('focus', checkAcct);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checkAcct(); });
   function drawSettings() {
     paintSignin();
     if (!ov.classList.contains('show')) return;
