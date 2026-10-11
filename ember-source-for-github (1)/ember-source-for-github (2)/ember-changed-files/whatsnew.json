@@ -24,7 +24,6 @@
   ],
   "1.0.6": [
     "Focus mode now shows a full-page screen when you open a paused site.",
-    "Signing in with Lareon shows its code only when the page asks you to confirm it.",
-    "On Mac, Get the update now downloads the new version and opens the installer for you."
+    "Signing in with Lareon shows its code only when the page asks you to confirm it."
   ]
 }
