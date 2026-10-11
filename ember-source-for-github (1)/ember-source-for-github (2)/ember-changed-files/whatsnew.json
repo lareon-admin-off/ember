@@ -1,5 +1,6 @@
 {
   "1.1.0": [
+    "The address bar now suggests searches as you type, and shows your past searches. Signed in, your searches follow you to your other devices. Turn suggestions off in Settings.",
     "Your Lareon account now does a lot more. Right-click a tab to send it to another device, save it to a reading list, email it to yourself, or jot a note about the site.",
     "New Lareon cloud panel in the toolbar (Ctrl+Shift+L): your devices, reading list, collections and notes.",
     "Save your open tabs as a collection and open them all again on any device.",
